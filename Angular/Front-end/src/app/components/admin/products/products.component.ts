@@ -11,16 +11,111 @@ import { HttpErrorResponse } from '@angular/common/http';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './products.component.html',
-  styleUrls: ['./products.component.scss']
+  styleUrls: ['./products.component.scss'],
+  styles: [`
+    .input-group-text {
+      color: var(--gray-500);
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus + .input-group-text {
+      color: var(--primary-color);
+    }
+    
+    .form-control, .form-select {
+      transition: all 0.3s ease;
+      border-color: var(--gray-300);
+    }
+    
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb, 63, 81, 181), 0.25);
+      border-color: var(--primary-color);
+    }
+    
+    .form-select {
+      background-position: right 0.75rem center;
+      cursor: pointer;
+    }
+    
+    .btn-outline-secondary {
+      transition: all 0.3s ease;
+    }
+    
+    .btn-outline-secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    
+    .badge {
+      transition: all 0.3s ease;
+    }
+    
+    .table tbody tr {
+      transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+      background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+    }
+    
+    .btn-sm {
+      transition: all 0.3s ease;
+    }
+    
+    .btn-sm:hover {
+      transform: translateY(-2px);
+    }
+  `]
 })
 export class AdminProductsComponent implements OnInit {
   products: Product[] = [];
+  filteredProducts: Product[] = [];
+  allProducts: Product[] = []; // Store all products for filtering
   selectedProduct: Product | null = null;
   isEditing = false;
   isLoading = false;
   error = '';
   successMessage = '';
   isAddingProduct = false;
+
+  // Search and filter properties
+  searchQuery = '';
+  categoryFilter = 'all';
+  priceFilter = 'all';
+  stockFilter = 'all';
+  featuredFilter = 'all';
+  
+  // Filter options
+  categoryOptions = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'clothing', label: 'Clothing' },
+    { value: 'books', label: 'Books' },
+    { value: 'home', label: 'Home & Kitchen' },
+    { value: 'beauty', label: 'Beauty' },
+    { value: 'sports', label: 'Sports & Outdoors' },
+    { value: 'other', label: 'Other' }
+  ];
+  
+  priceOptions = [
+    { value: 'all', label: 'All Prices' },
+    { value: 'under25', label: 'Under $25' },
+    { value: '25to50', label: '$25 to $50' },
+    { value: '50to100', label: '$50 to $100' },
+    { value: 'over100', label: 'Over $100' }
+  ];
+  
+  stockOptions = [
+    { value: 'all', label: 'All Stock' },
+    { value: 'instock', label: 'In Stock' },
+    { value: 'lowstock', label: 'Low Stock (≤ 10)' },
+    { value: 'outofstock', label: 'Out of Stock' }
+  ];
+  
+  featuredOptions = [
+    { value: 'all', label: 'All Products' },
+    { value: 'featured', label: 'Featured Only' },
+    { value: 'nonfeatured', label: 'Non-Featured Only' }
+  ];
 
   newProduct: Product = {
     _id: '',
@@ -55,18 +150,22 @@ export class AdminProductsComponent implements OnInit {
       next: (response) => {
         // Handle paginated response
         if (isPaginatedResponse<Product>(response)) {
-          this.products = response.docs;
+          this.allProducts = response.docs;
         } 
         // If response is already an array
         else if (Array.isArray(response)) {
-          this.products = response;
+          this.allProducts = response;
         } 
         // Fallback to empty array if not recognized format
         else {
-          this.products = [];
+          this.allProducts = [];
           console.error('Unexpected response format:', response);
           this.error = 'Received invalid data format from server';
         }
+        
+        this.products = [...this.allProducts];
+        this.filteredProducts = [...this.allProducts];
+        this.applyFilters(); // Apply any existing filters
         this.isLoading = false;
       },
       error: (err: HttpErrorResponse) => {
@@ -87,6 +186,94 @@ export class AdminProductsComponent implements OnInit {
         }
       }
     });
+  }
+  
+  // Apply search and filters
+  applyFilters(): void {
+    let result = [...this.allProducts];
+    
+    // Apply category filter
+    if (this.categoryFilter !== 'all') {
+      result = result.filter(product => product.category === this.categoryFilter);
+    }
+    
+    // Apply price filter
+    if (this.priceFilter !== 'all') {
+      result = result.filter(product => {
+        const price = product.price;
+        switch (this.priceFilter) {
+          case 'under25':
+            return price < 25;
+          case '25to50':
+            return price >= 25 && price <= 50;
+          case '50to100':
+            return price > 50 && price <= 100;
+          case 'over100':
+            return price > 100;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply stock filter
+    if (this.stockFilter !== 'all') {
+      result = result.filter(product => {
+        const stock = product.stock || product.quantity || 0;
+        switch (this.stockFilter) {
+          case 'instock':
+            return stock > 0;
+          case 'lowstock':
+            return stock > 0 && stock <= 10;
+          case 'outofstock':
+            return stock <= 0;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply featured filter
+    if (this.featuredFilter !== 'all') {
+      result = result.filter(product => {
+        switch (this.featuredFilter) {
+          case 'featured':
+            return product.isFeatured === true;
+          case 'nonfeatured':
+            return product.isFeatured === false;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply search filter if there's a query
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      result = result.filter(product => {
+        const name = (product.name || '').toLowerCase();
+        const title = (product.title || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        
+        return name.includes(query) || 
+               title.includes(query) || 
+               description.includes(query) || 
+               category.includes(query);
+      });
+    }
+    
+    this.filteredProducts = result;
+  }
+  
+  // Reset all filters
+  resetFilters(): void {
+    this.searchQuery = '';
+    this.categoryFilter = 'all';
+    this.priceFilter = 'all';
+    this.stockFilter = 'all';
+    this.featuredFilter = 'all';
+    this.applyFilters();
   }
 
   toggleAddProductForm(): void {

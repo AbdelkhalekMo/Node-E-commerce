@@ -30,6 +30,117 @@
     </div>
   </div>
 
+  <!-- Search and Filter Section -->
+  <div class="row mb-4" *ngIf="!isLoading || isAddingProduct || isEditing">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Search Bar -->
+            <div class="col-md-12 col-lg-6 mb-3">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control border-start-0 ps-0" 
+                  placeholder="Search by name, title, description or category" 
+                  [(ngModel)]="searchQuery"
+                  (input)="applyFilters()"
+                  aria-label="Search products">
+                <button 
+                  *ngIf="searchQuery" 
+                  class="btn btn-outline-secondary border-start-0" 
+                  type="button"
+                  (click)="searchQuery = ''; applyFilters()">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="col-md-6 col-lg-3 mb-3">
+              <div class="row g-2">
+                <div class="col-6">
+                  <select 
+                    class="form-select form-select-sm" 
+                    [(ngModel)]="categoryFilter" 
+                    (change)="applyFilters()"
+                    aria-label="Filter by category">
+                    <option *ngFor="let option of categoryOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <select 
+                    class="form-select form-select-sm" 
+                    [(ngModel)]="priceFilter" 
+                    (change)="applyFilters()"
+                    aria-label="Filter by price">
+                    <option *ngFor="let option of priceOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3 mb-3">
+              <div class="row g-2">
+                <div class="col-6">
+                  <select 
+                    class="form-select form-select-sm" 
+                    [(ngModel)]="stockFilter" 
+                    (change)="applyFilters()"
+                    aria-label="Filter by stock">
+                    <option *ngFor="let option of stockOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <select 
+                    class="form-select form-select-sm" 
+                    [(ngModel)]="featuredFilter" 
+                    (change)="applyFilters()"
+                    aria-label="Filter by featured status">
+                    <option *ngFor="let option of featuredOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Reset Button -->
+            <div class="col-12">
+              <button 
+                class="btn btn-sm btn-outline-secondary" 
+                [disabled]="!searchQuery && categoryFilter === 'all' && priceFilter === 'all' && stockFilter === 'all' && featuredFilter === 'all'"
+                (click)="resetFilters()">
+                Reset Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results count -->
+  <div class="row mb-3" *ngIf="!isLoading || isAddingProduct || isEditing">
+    <div class="col-12">
+      <p class="text-muted mb-0">
+        Showing {{ filteredProducts.length }} of {{ allProducts.length }} products
+        <span *ngIf="searchQuery || categoryFilter !== 'all' || priceFilter !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all'">
+          <button class="btn btn-sm btn-link p-0 ms-2" (click)="resetFilters()">Clear filters</button>
+        </span>
+      </p>
+    </div>
+  </div>
+
   <!-- Add product form -->
   <div class="row mb-4" *ngIf="isAddingProduct">
     <div class="col-12">
@@ -216,10 +327,17 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngIf="products.length === 0">
-                  <td colspan="7" class="text-center p-4">No products available</td>
+                <tr *ngIf="filteredProducts.length === 0">
+                  <td colspan="7" class="text-center p-4">
+                    <div *ngIf="searchQuery || categoryFilter !== 'all' || priceFilter !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all'">
+                      No products match your search criteria
+                    </div>
+                    <div *ngIf="!searchQuery && categoryFilter === 'all' && priceFilter === 'all' && stockFilter === 'all' && featuredFilter === 'all'">
+                      No products available
+                    </div>
+                  </td>
                 </tr>
-                <tr *ngFor="let product of products">
+                <tr *ngFor="let product of filteredProducts">
                   <td class="align-middle" style="width: 80px;">
                     <img [src]="product.imageUrl || product.image" alt="{{ product.name || product.title }}" class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
                   </td>

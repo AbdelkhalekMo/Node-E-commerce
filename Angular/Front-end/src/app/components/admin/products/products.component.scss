@@ -1,0 +1,155 @@
+/* Products component styles */
+
+// Enhanced card styles
+.card {
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    background: linear-gradient(45deg, var(--primary-color, #3f51b5), var(--primary-light, #757de8));
+    border: none;
+  }
+}
+
+// Enhanced form control styles
+.form-control, .form-select {
+  transition: all 0.3s ease;
+  
+  &:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb, 63, 81, 181), 0.25);
+    border-color: var(--primary-color, #3f51b5);
+  }
+}
+
+// Enhanced button styles
+.btn {
+  transition: all 0.3s ease;
+  
+  &.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color, #3f51b5), var(--primary-light, #757de8));
+    border: none;
+    box-shadow: 0 4px 6px rgba(63, 81, 181, 0.2);
+    
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 14px rgba(63, 81, 181, 0.3);
+      background: linear-gradient(45deg, var(--primary-dark, #002984), var(--primary-color, #3f51b5));
+    }
+  }
+  
+  &.btn-outline-primary {
+    border-color: var(--primary-color, #3f51b5);
+    color: var(--primary-color, #3f51b5);
+    
+    &:hover:not(:disabled) {
+      background-color: var(--primary-color, #3f51b5);
+      color: white;
+      transform: translateY(-2px);
+    }
+  }
+  
+  &.btn-outline-secondary {
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Enhanced table styles
+.table {
+  margin-bottom: 0;
+  
+  th {
+    font-weight: 600;
+    color: var(--gray-700);
+    border-top: none;
+  }
+  
+  td {
+    vertical-align: middle;
+  }
+  
+  tbody tr {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+    }
+  }
+}
+
+// Enhanced badge styles
+.badge {
+  font-weight: 500;
+  padding: 0.4em 0.6em;
+  transition: all 0.3s ease;
+  
+  &.bg-success {
+    background-color: var(--success-color, #4caf50) !important;
+  }
+  
+  &.bg-secondary {
+    background-color: var(--gray-500, #6c757d) !important;
+  }
+}
+
+// Enhanced search and filter styles
+.input-group {
+  .input-group-text {
+    background-color: transparent;
+    border-right: 0;
+  }
+  
+  .form-control {
+    border-left: 0;
+    
+    &:focus + .input-group-text {
+      border-color: var(--primary-color, #3f51b5);
+    }
+  }
+}
+
+// Filter section animations
+.filter-section {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Image thumbnail enhancements
+.img-thumbnail {
+  object-fit: cover;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+    
+    .filter-item {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+}
