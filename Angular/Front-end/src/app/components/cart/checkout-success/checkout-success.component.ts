@@ -134,6 +134,6 @@ export class CheckoutSuccessComponent implements OnInit {
   }
   
   viewOrders(): void {
-    this.router.navigate(['/profile']);
+    this.router.navigate(['/orders']);
   }
 }

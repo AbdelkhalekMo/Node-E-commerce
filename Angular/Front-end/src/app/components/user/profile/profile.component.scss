@@ -21,3 +21,25 @@
 .nav-pills .nav-link.active {
   background-color: #0d6efd;
 }
+
+/* Order status badge colors */
+.badge.bg-primary, 
+.badge.bg-info {
+  background-color: var(--primary-color, #3f51b5) !important;
+}
+
+.badge.bg-warning {
+  background-color: var(--warning-color, #ff9800) !important;
+}
+
+.badge.bg-success {
+  background-color: var(--success-color, #4caf50) !important;
+}
+
+.badge.bg-danger {
+  background-color: var(--danger-color, #f44336) !important;
+}
+
+.badge.bg-dark {
+  background-color: #212529 !important;
+}

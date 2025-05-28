@@ -110,6 +110,11 @@ export const createProduct = async (req, res) => {
   try {
     const productData = req.body;
     
+    // Remove _id field if it exists to let MongoDB generate it
+    if (productData._id === "" || productData._id) {
+      delete productData._id;
+    }
+    
     // Validate product data
     const validationErrors = validateProduct(productData);
     if (validationErrors.length > 0) {

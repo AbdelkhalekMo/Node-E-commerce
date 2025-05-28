@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
 import { OrderService } from '../../../services/order.service';
@@ -17,6 +17,7 @@ import { Order } from '../../../models/order';
 export class ProfileComponent implements OnInit {
   private authService = inject(AuthService);
   private orderService = inject(OrderService);
+  private route = inject(ActivatedRoute);
 
   user: User | null = null;
   orders: Order[] = [];
@@ -39,6 +40,13 @@ export class ProfileComponent implements OnInit {
   passwordError = '';
 
   ngOnInit(): void {
+    // Check if we should activate a specific tab from route data
+    this.route.data.subscribe(data => {
+      if (data['activeTab']) {
+        this.activeTab = data['activeTab'];
+      }
+    });
+    
     this.loadUserProfile();
   }
 
@@ -191,5 +199,9 @@ export class ProfileComponent implements OnInit {
     this.error = '';
     this.successMessage = '';
     this.passwordError = '';
+  }
+  
+  isAdmin(): boolean {
+    return this.user?.role === 'admin';
   }
 }

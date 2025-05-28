@@ -59,6 +59,12 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   { 
+    path: 'orders', 
+    loadComponent: () => import('././components/user/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [customerGuard],
+    data: { activeTab: 'orders' }
+  },
+  { 
     path: 'admin', 
     children: [
       { 

@@ -60,10 +60,12 @@
                   <td>
                     <span class="badge" 
                           [ngClass]="{
+                            'bg-primary': getOrderStatus(order) === 'pending',
                             'bg-warning': getOrderStatus(order) === 'processing',
                             'bg-info': getOrderStatus(order) === 'shipped',
                             'bg-success': getOrderStatus(order) === 'delivered',
-                            'bg-danger': getOrderStatus(order) === 'cancelled'
+                            'bg-danger': getOrderStatus(order) === 'cancelled',
+                            'bg-dark': getOrderStatus(order) === 'completed'
                           }">
                       {{ getOrderStatus(order) | titlecase }}
                     </span>
@@ -74,9 +76,11 @@
                         Actions
                       </button>
                       <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'pending')">Mark as Pending</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'processing')">Mark as Processing</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'shipped')">Mark as Shipped</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'delivered')">Mark as Delivered</button></li>
+                        <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'completed')">Mark as Completed</button></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><button class="dropdown-item text-danger" (click)="updateOrderStatus(order._id, 'cancelled')">Cancel Order</button></li>
                       </ul>
