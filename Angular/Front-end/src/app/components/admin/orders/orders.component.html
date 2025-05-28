@@ -6,6 +6,63 @@
     </div>
   </div>
 
+  <!-- Search and Filter Section -->
+  <div class="row mb-4" *ngIf="!isLoading && !error">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="row g-3">
+            <!-- Search Bar -->
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control border-start-0 ps-0" 
+                  placeholder="Search by customer email or order ID" 
+                  [(ngModel)]="searchQuery"
+                  (input)="applyFilters()"
+                  aria-label="Search orders">
+                <button 
+                  *ngIf="searchQuery" 
+                  class="btn btn-outline-secondary border-start-0" 
+                  type="button"
+                  (click)="searchQuery = ''; applyFilters()">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="col-md-4">
+              <select 
+                class="form-select" 
+                [(ngModel)]="statusFilter" 
+                (change)="applyFilters()"
+                aria-label="Filter by status">
+                <option *ngFor="let option of statusOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            
+            <!-- Reset Button -->
+            <div class="col-md-2">
+              <button 
+                class="btn btn-outline-secondary w-100" 
+                [disabled]="!searchQuery && statusFilter === 'all'"
+                (click)="resetFilters()">
+                Reset Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading spinner -->
   <div class="row" *ngIf="isLoading">
     <div class="col-12 text-center">
@@ -29,6 +86,18 @@
     </div>
   </div>
 
+  <!-- Results count -->
+  <div class="row mb-3" *ngIf="!isLoading && !error">
+    <div class="col-12">
+      <p class="text-muted mb-0">
+        Showing {{ filteredOrders.length }} of {{ allOrders.length }} orders
+        <span *ngIf="searchQuery || statusFilter !== 'all'">
+          <button class="btn btn-sm btn-link p-0 ms-2" (click)="resetFilters()">Clear filters</button>
+        </span>
+      </p>
+    </div>
+  </div>
+
   <!-- Orders table -->
   <div class="row" *ngIf="!isLoading && !error">
     <div class="col-12">
@@ -48,10 +117,17 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngIf="orders.length === 0">
-                  <td colspan="7" class="text-center p-4">No orders available</td>
+                <tr *ngIf="filteredOrders.length === 0">
+                  <td colspan="7" class="text-center p-4">
+                    <div *ngIf="searchQuery || statusFilter !== 'all'">
+                      No orders match your search criteria
+                    </div>
+                    <div *ngIf="!searchQuery && statusFilter === 'all'">
+                      No orders available
+                    </div>
+                  </td>
                 </tr>
-                <tr *ngFor="let order of orders">
+                <tr *ngFor="let order of filteredOrders">
                   <td>{{ order._id }}</td>
                   <td>{{ order.createdAt | date:'short' }}</td>
                   <td>{{ getUserEmail(order.user) }}</td>

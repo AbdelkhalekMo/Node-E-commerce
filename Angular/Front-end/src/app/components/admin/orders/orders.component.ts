@@ -11,14 +11,84 @@ import { catchError, finalize, of } from 'rxjs';
   selector: 'app-admin-orders',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './orders.component.html'
+  templateUrl: './orders.component.html',
+  styles: [`
+    .input-group-text {
+      color: var(--gray-500);
+      transition: all 0.3s ease;
+    }
+    
+    .form-control:focus + .input-group-text {
+      color: var(--primary-color);
+    }
+    
+    .form-control, .form-select {
+      transition: all 0.3s ease;
+      border-color: var(--gray-300);
+    }
+    
+    .form-control:focus, .form-select:focus {
+      box-shadow: 0 0 0 0.25rem rgba(var(--primary-color-rgb, 63, 81, 181), 0.25);
+      border-color: var(--primary-color);
+    }
+    
+    .form-select {
+      background-position: right 0.75rem center;
+      cursor: pointer;
+    }
+    
+    .btn-outline-secondary {
+      transition: all 0.3s ease;
+    }
+    
+    .btn-outline-secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    
+    .badge {
+      transition: all 0.3s ease;
+    }
+    
+    .table tbody tr {
+      transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+      background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+    }
+    
+    .btn-sm {
+      transition: all 0.3s ease;
+    }
+    
+    .btn-sm:hover {
+      transform: translateY(-2px);
+    }
+  `]
 })
 export class AdminOrdersComponent implements OnInit {
   private orderService = inject(OrderService);
   
   orders: Order[] = [];
+  filteredOrders: Order[] = [];
+  allOrders: Order[] = []; // Store all orders for filtering
   isLoading = true;
   error = '';
+  
+  // Search and filter properties
+  searchQuery = '';
+  statusFilter = 'all';
+  
+  // Status options for the filter dropdown
+  statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' }
+  ];
   
   ngOnInit(): void {
     this.loadOrders();
@@ -39,7 +109,11 @@ export class AdminOrdersComponent implements OnInit {
       })
     ).subscribe({
       next: (orders) => {
-        this.orders = orders;
+        // Sort orders by date (newest first)
+        this.allOrders = this.sortOrdersByDate(orders);
+        this.orders = [...this.allOrders];
+        this.filteredOrders = [...this.allOrders];
+        this.applyFilters(); // Apply any existing filters
       },
       error: (err) => {
         // Should be handled by catchError above, but just in case
@@ -48,6 +122,45 @@ export class AdminOrdersComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+  
+  // Sort orders by date (newest first)
+  sortOrdersByDate(orders: Order[]): Order[] {
+    return orders.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+  }
+  
+  // Apply search and filters
+  applyFilters(): void {
+    let result = [...this.allOrders];
+    
+    // Apply status filter
+    if (this.statusFilter !== 'all') {
+      result = result.filter(order => this.getOrderStatus(order) === this.statusFilter);
+    }
+    
+    // Apply search filter if there's a query
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
+      result = result.filter(order => {
+        const userEmail = this.getUserEmail(order.user).toLowerCase();
+        const orderId = order._id.toLowerCase();
+        
+        return userEmail.includes(query) || orderId.includes(query);
+      });
+    }
+    
+    this.filteredOrders = result;
+  }
+  
+  // Reset all filters
+  resetFilters(): void {
+    this.searchQuery = '';
+    this.statusFilter = 'all';
+    this.applyFilters();
   }
   
   updateOrderStatus(orderId: string, status: string): void {

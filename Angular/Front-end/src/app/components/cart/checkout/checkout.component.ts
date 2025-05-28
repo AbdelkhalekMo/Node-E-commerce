@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../../../services/cart.service';
 import { OrderService } from '../../../services/order.service';
 import { AuthService } from '../../../services/auth.service';
+import { CouponService } from '../../../services/coupon.service';
 import { CartItem } from '../../../models/cart-item';
 
 @Component({
@@ -17,10 +18,19 @@ import { CartItem } from '../../../models/cart-item';
 export class CheckoutComponent implements OnInit {
   cartItems: CartItem[] = [];
   cartTotal: number = 0;
+  discountedTotal: number = 0;
   isProcessing: boolean = false;
   paymentMethod: string = 'credit_card';
   isLoading: boolean = false;
   error: string | undefined;
+  
+  // Coupon related properties
+  couponCode: string = '';
+  couponDiscount: number = 0;
+  couponError: string = '';
+  couponSuccess: string = '';
+  appliedCoupon: any = null;
+  isApplyingCoupon: boolean = false;
   
   // Countries list for dropdown
   countries: string[] = [
@@ -43,11 +53,13 @@ export class CheckoutComponent implements OnInit {
     private cartService: CartService,
     private orderService: OrderService,
     private authService: AuthService,
+    private couponService: CouponService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadCart();
+    this.loadUserCoupon();
   }
 
   loadCart(): void {
@@ -57,11 +69,71 @@ export class CheckoutComponent implements OnInit {
     });
   }
 
+  loadUserCoupon(): void {
+    this.couponService.getCoupon().subscribe({
+      next: (coupon) => {
+        if (coupon) {
+          // If user has a coupon, pre-fill the coupon code field
+          this.couponCode = coupon.code;
+        }
+      },
+      error: (err) => {
+        console.error('Error loading user coupon:', err);
+      }
+    });
+  }
+
   calculateTotal(): void {
     this.cartTotal = this.cartItems.reduce(
       (total, item) => total + (item.product.price * item.quantity),
       0
     );
+    
+    // Calculate discounted total if coupon is applied
+    if (this.appliedCoupon && this.couponDiscount > 0) {
+      this.discountedTotal = this.cartTotal - (this.cartTotal * this.couponDiscount / 100);
+    } else {
+      this.discountedTotal = this.cartTotal;
+    }
+  }
+
+  applyCoupon(): void {
+    // Reset coupon messages
+    this.couponError = '';
+    this.couponSuccess = '';
+    
+    if (!this.couponCode.trim()) {
+      this.couponError = 'Please enter a coupon code';
+      return;
+    }
+    
+    this.isApplyingCoupon = true;
+    
+    this.couponService.validateCoupon(this.couponCode).subscribe({
+      next: (response) => {
+        this.isApplyingCoupon = false;
+        this.appliedCoupon = response;
+        this.couponDiscount = response.discountPercentage;
+        this.couponSuccess = `Coupon applied! ${response.discountPercentage}% discount`;
+        this.calculateTotal();
+      },
+      error: (err) => {
+        this.isApplyingCoupon = false;
+        this.appliedCoupon = null;
+        this.couponDiscount = 0;
+        this.couponError = err.error?.message || 'Invalid coupon code';
+        this.calculateTotal();
+      }
+    });
+  }
+
+  removeCoupon(): void {
+    this.couponCode = '';
+    this.couponDiscount = 0;
+    this.appliedCoupon = null;
+    this.couponError = '';
+    this.couponSuccess = '';
+    this.calculateTotal();
   }
 
   placeOrder(): void {
@@ -102,7 +174,7 @@ export class CheckoutComponent implements OnInit {
           quantity: item.quantity,
           price: item.product.price
         })),
-        totalAmount: this.cartTotal,
+        totalAmount: this.discountedTotal, // Use discounted total if coupon applied
         shippingAddress: {
           fullName: this.shippingData.fullName,
           address: this.shippingData.address,
@@ -112,7 +184,9 @@ export class CheckoutComponent implements OnInit {
           country: this.shippingData.country
         },
         paymentMethod: 'credit_card',
-        status: 'processing'
+        status: 'processing',
+        couponCode: this.appliedCoupon ? this.appliedCoupon.code : null,
+        couponDiscount: this.couponDiscount
       };
 
       console.log('Sending order data to server:', orderData);

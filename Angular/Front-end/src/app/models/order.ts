@@ -11,9 +11,10 @@ export interface ShippingAddress {
   fullName: string;
   address: string;
   city: string;
-  state?: string;
+  state: string;
   postalCode: string;
   country: string;
+  phone?: string;
 }
 
 export interface PaymentResult {
@@ -37,6 +38,8 @@ export interface Order {
   paymentStatus?: string; // Matches backend
   shippingMethod?: string; // Matches backend
   discountAmount?: number; // Matches backend
+  couponCode?: string; // Coupon code used
+  couponDiscount?: number; // Discount percentage from coupon
   createdAt: Date;
   updatedAt: Date;
 }

@@ -128,6 +128,25 @@ export class CheckoutSuccessComponent implements OnInit {
     return unitPrice * item.quantity;
   }
   
+  // Helper method to get the discount amount from the coupon
+  getDiscountAmount(): number {
+    if (!this.order || !this.order.couponDiscount || !this.order.totalAmount) {
+      return 0;
+    }
+    
+    return (this.order.totalAmount * this.order.couponDiscount) / 100;
+  }
+  
+  // Helper method to get the final amount after discount
+  getFinalAmount(): number {
+    if (!this.order || !this.order.totalAmount) {
+      return 0;
+    }
+    
+    const discountAmount = this.getDiscountAmount();
+    return this.order.totalAmount - discountAmount;
+  }
+  
   // Navigation methods
   continueShopping(): void {
     this.router.navigate(['/']);

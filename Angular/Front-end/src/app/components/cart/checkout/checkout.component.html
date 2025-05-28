@@ -133,6 +133,48 @@
     </div>
 
     <div class="col-md-4">
+      <!-- Coupon Section -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Apply Coupon</h5>
+          
+          <div *ngIf="couponError" class="alert alert-danger py-2 mb-3">
+            {{ couponError }}
+          </div>
+          
+          <div *ngIf="couponSuccess" class="alert alert-success py-2 mb-3">
+            {{ couponSuccess }}
+          </div>
+          
+          <div class="input-group mb-3">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Enter coupon code" 
+              [(ngModel)]="couponCode"
+              [disabled]="appliedCoupon || isApplyingCoupon">
+            
+            <button 
+              *ngIf="!appliedCoupon"
+              class="btn btn-outline-primary" 
+              type="button" 
+              (click)="applyCoupon()"
+              [disabled]="!couponCode || isApplyingCoupon">
+              <span *ngIf="isApplyingCoupon" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Apply
+            </button>
+            
+            <button 
+              *ngIf="appliedCoupon"
+              class="btn btn-outline-secondary" 
+              type="button" 
+              (click)="removeCoupon()">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+      
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h4 class="card-title mb-3">Order Summary</h4>
@@ -147,11 +189,20 @@
             <span>Free</span>
           </div>
           
+          <!-- Coupon discount row -->
+          <div class="d-flex justify-content-between mb-2" *ngIf="couponDiscount > 0">
+            <span>Discount ({{ couponDiscount }}%):</span>
+            <span class="text-success">-${{ (cartTotal * couponDiscount / 100).toFixed(2) }}</span>
+          </div>
+          
           <hr>
           
           <div class="d-flex justify-content-between mb-3">
             <strong>Total:</strong>
-            <strong>${{ cartTotal.toFixed(2) }}</strong>
+            <strong>
+              <span *ngIf="couponDiscount > 0" class="text-decoration-line-through text-muted me-2">${{ cartTotal.toFixed(2) }}</span>
+              ${{ discountedTotal.toFixed(2) }}
+            </strong>
           </div>
         </div>
       </div>

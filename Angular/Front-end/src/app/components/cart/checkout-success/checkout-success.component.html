@@ -153,6 +153,18 @@
                       <td colspan="3" class="text-end fw-bold">Subtotal:</td>
                       <td>${{ order.totalAmount | number:'1.2-2' }}</td>
                     </tr>
+                    <!-- Add coupon discount row if applicable -->
+                    <tr *ngIf="order.couponDiscount && order.couponDiscount > 0">
+                      <td colspan="3" class="text-end text-success">
+                        <span class="fw-bold">Discount:</span>
+                        <span *ngIf="order.couponCode" class="ms-2">(Coupon: {{ order.couponCode }})</span>
+                      </td>
+                      <td class="text-success">-${{ getDiscountAmount() | number:'1.2-2' }}</td>
+                    </tr>
+                    <tr *ngIf="order.couponDiscount && order.couponDiscount > 0">
+                      <td colspan="3" class="text-end fw-bold">Total:</td>
+                      <td class="fw-bold">${{ getFinalAmount() | number:'1.2-2' }}</td>
+                    </tr>
                   </tfoot>
                 </table>
               </div>
