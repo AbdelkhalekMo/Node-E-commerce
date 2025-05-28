@@ -1,0 +1,23 @@
+/* Profile component styles */
+.profile-tab-content {
+  padding: 2rem 0;
+}
+
+.profile-info {
+  margin-bottom: 2rem;
+}
+
+.order-badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+.order-item {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #0d6efd;
+}

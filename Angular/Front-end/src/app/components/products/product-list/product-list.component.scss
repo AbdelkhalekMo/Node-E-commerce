@@ -1,0 +1,33 @@
+/* Product List component styles */
+.product-card {
+  transition: transform 0.3s;
+  margin-bottom: 1.5rem;
+  height: 100%;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+}
+
+.product-image {
+  height: 200px;
+  object-fit: cover;
+}
+
+.product-title {
+  font-weight: 500;
+  height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filters-section {
+  background-color: #f8f9fa;
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+.search-box {
+  margin-bottom: 15px;
+}

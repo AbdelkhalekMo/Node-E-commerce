@@ -1,0 +1,93 @@
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <h2 class="display-6">Order Management</h2>
+      <a routerLink="/admin" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+      </div>
+      <div class="text-center mt-3">
+        <button class="btn btn-primary" (click)="loadOrders()">Try Again</button>
+        <a routerLink="/admin" class="btn btn-outline-secondary ms-2">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders table -->
+  <div class="row" *ngIf="!isLoading && !error">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Order ID</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Items</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="orders.length === 0">
+                  <td colspan="7" class="text-center p-4">No orders available</td>
+                </tr>
+                <tr *ngFor="let order of orders">
+                  <td>{{ order._id }}</td>
+                  <td>{{ order.createdAt | date:'short' }}</td>
+                  <td>{{ getUserEmail(order.user) }}</td>
+                  <td>{{ getOrderItemsCount(order) }}</td>
+                  <td>${{ getOrderTotal(order) }}</td>
+                  <td>
+                    <span class="badge" 
+                          [ngClass]="{
+                            'bg-warning': getOrderStatus(order) === 'processing',
+                            'bg-info': getOrderStatus(order) === 'shipped',
+                            'bg-success': getOrderStatus(order) === 'delivered',
+                            'bg-danger': getOrderStatus(order) === 'cancelled'
+                          }">
+                      {{ getOrderStatus(order) | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'processing')">Mark as Processing</button></li>
+                        <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'shipped')">Mark as Shipped</button></li>
+                        <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'delivered')">Mark as Delivered</button></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item text-danger" (click)="updateOrderStatus(order._id, 'cancelled')">Cancel Order</button></li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

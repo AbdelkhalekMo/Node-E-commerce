@@ -1,0 +1,19 @@
+/* Dashboard component styles */
+.dashboard-card {
+  transition: transform 0.3s;
+  margin-bottom: 1rem;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+}

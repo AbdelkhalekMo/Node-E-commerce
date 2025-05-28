@@ -1,0 +1,83 @@
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="display-6">User Management</h2>
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users table -->
+  <div class="row" *ngIf="!isLoading">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Joined</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="users.length === 0">
+                  <td colspan="7" class="text-center p-4">No users available</td>
+                </tr>
+                <tr *ngFor="let user of users">
+                  <td>{{ user._id }}</td>
+                  <td>{{ user.name }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.username || 'N/A' }}</td>
+                  <td>
+                    <span class="badge" 
+                          [ngClass]="{
+                            'bg-danger': user.role === 'admin',
+                            'bg-primary': user.role === 'customer' || !user.role
+                          }">
+                      {{ user.role || 'customer' | titlecase }}
+                    </span>
+                  </td>
+                  <td>{{ user.createdAt | date:'short' }}</td>
+                  <td>
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Actions
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <li><a class="dropdown-item" href="javascript:void(0)" (click)="updateUserRole(user)">Make Admin</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" (click)="updateUserRole(user, false)">Make Customer</a></li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

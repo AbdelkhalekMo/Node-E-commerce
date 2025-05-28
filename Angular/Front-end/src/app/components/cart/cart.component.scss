@@ -1,0 +1,27 @@
+/* Cart component styles */
+.cart-item {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.product-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+.quantity-control {
+  display: flex;
+  align-items: center;
+  
+  button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+  }
+  
+  span {
+    margin: 0 10px;
+  }
+}

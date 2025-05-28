@@ -1,0 +1,165 @@
+<div class="container mt-5">
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Order success -->
+  <div class="row" *ngIf="!isLoading && !error && order">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body text-center p-5">
+          <div class="mb-4">
+            <div class="bg-success text-white d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px;">
+              <i class="bi bi-check-lg fs-1"></i>
+            </div>
+          </div>
+          <h2 class="display-6 mb-3">Order Confirmed!</h2>
+          <p class="lead mb-4">Thank you for your purchase. Your order has been processed successfully.</p>
+          <div class="d-flex align-items-center justify-content-center mb-4">
+            <div class="me-3 fw-bold">Order ID:</div>
+            <div class="text-primary">{{ order._id }}</div>
+          </div>
+          <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-3">
+            <button (click)="continueShopping()" class="btn btn-outline-primary">Continue Shopping</button>
+            <button (click)="viewOrders()" class="btn btn-primary">View My Orders</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Details -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Order Details</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6 class="text-muted mb-2">Shipping Address</h6>
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h5 class="mb-0">Shipping Address</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <h6>Recipient</h6>
+                      <p class="mb-1">{{ order.shippingAddress.fullName }}</p>
+                      <p class="mb-1">{{ order.shippingAddress.address }}</p>
+                      <p class="mb-1">{{ order.shippingAddress.city }}, {{ order.shippingAddress.country }} {{ order.shippingAddress.postalCode }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted mb-2">Order Summary</h6>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Order Date:</span>
+                <span>{{ order.createdAt | date:'medium' }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Payment Method:</span>
+                <span>{{ order.paymentMethod }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Payment Status:</span>
+                <span *ngIf="order.paymentResult" [ngClass]="{
+                  'text-success': order.paymentResult.status === 'completed', 
+                  'text-warning': order.paymentResult.status === 'pending', 
+                  'text-danger': order.paymentResult.status === 'failed'
+                }">
+                  {{ order.paymentResult.status | titlecase }}
+                </span>
+                <span *ngIf="!order.paymentResult" class="text-warning">Pending</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Order Status:</span>
+                <span class="text-primary">{{ getOrderStatus() | titlecase }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">Payment Information</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Payment Method</h6>
+                  <p class="mb-1">{{ order.paymentMethod }}</p>
+                  <p class="mb-0" *ngIf="order.paymentResult">
+                    <span [ngClass]="{
+                      'text-success': order.paymentResult.status === 'completed', 
+                      'text-warning': order.paymentResult.status === 'pending', 
+                      'text-danger': order.paymentResult.status === 'failed'
+                    }">
+                      {{ order.paymentResult.status | titlecase }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h6 class="text-muted mb-3">Order Items</h6>
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col" style="width: 50%">Product</th>
+                      <th scope="col">Price</th>
+                      <th scope="col">Quantity</th>
+                      <th scope="col">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let item of getOrderItems()">
+                      <td>
+                        <div class="d-flex">
+                          <img [src]="getProductImage(item.product)" alt="{{ getProductTitle(item.product) }}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                          <div class="ms-3">
+                            <h6 class="mb-0">{{ getProductTitle(item.product) }}</h6>
+                            <small class="text-muted">{{ getProductCategory(item.product) | titlecase }}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>${{ getProductPrice(item.product) | number:'1.2-2' }}</td>
+                      <td>{{ item.quantity }}</td>
+                      <td>${{ (getProductPrice(item.product) * item.quantity) | number:'1.2-2' }}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                      <td>${{ order.totalAmount | number:'1.2-2' }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

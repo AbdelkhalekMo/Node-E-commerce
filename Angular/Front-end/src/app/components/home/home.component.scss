@@ -1,0 +1,47 @@
+/* Home component styles */
+.hero-section {
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1607082350899-7e105aa886ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80');
+  background-size: cover;
+  background-position: center;
+  padding: 6rem 0;
+  margin-bottom: 0;
+}
+
+.product-card {
+  transition: transform 0.3s, box-shadow 0.3s;
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  
+  .product-image {
+    height: 200px;
+    object-fit: contain;
+    padding: 1rem;
+  }
+  
+  .price {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #e63946;
+  }
+}
+
+.category-card {
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+}
+
+/* Custom styling for newsletter section */
+.input-group {
+  max-width: 500px;
+  margin: 0 auto;
+}

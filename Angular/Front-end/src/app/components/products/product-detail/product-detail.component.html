@@ -1,0 +1,63 @@
+<div class="container mt-4">
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center p-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error && !isLoading">
+    <div class="col-12">
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Product details -->
+  <div class="row" *ngIf="!isLoading && !error && product">
+    <div class="col-lg-6 mb-4">
+      <img [src]="product.imageUrl || product.image || 'assets/placeholder.jpg'" class="img-fluid rounded" alt="{{ product.title || product.name }}" style="max-height: 500px; width: 100%; object-fit: cover;">
+    </div>
+    <div class="col-lg-6">
+      <div class="ps-lg-4">
+        <h1 class="mb-3">{{ product.name }}</h1>
+        <p class="lead">${{ product.price.toFixed(2) }}</p>
+        
+        <div class="mb-4">
+          <span *ngIf="product.isFeatured" class="badge bg-success me-2">Featured</span>
+          <span class="badge bg-secondary">{{ product.category }}</span>
+        </div>
+        
+        <p class="mb-4">{{ product.description }}</p>
+        
+        <div class="d-flex align-items-center mb-4" *ngIf="!isAdmin">
+          <div class="input-group" style="max-width: 150px;">
+            <button class="btn btn-outline-secondary" type="button" (click)="decrementQuantity()">-</button>
+            <input type="number" class="form-control text-center" [(ngModel)]="quantity" min="1">
+            <button class="btn btn-outline-secondary" type="button" (click)="incrementQuantity()">+</button>
+          </div>
+        </div>
+        
+        <div class="d-grid gap-2">
+          <button 
+            *ngIf="!isAdmin"
+            class="btn btn-primary" 
+            [disabled]="addingToCart" 
+            (click)="addToCart()">
+            <span *ngIf="addingToCart" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            <span *ngIf="!isLoggedIn">Login to Add to Cart</span>
+            <span *ngIf="isLoggedIn">Add to Cart</span>
+          </button>
+          <div *ngIf="isAdmin" class="alert alert-info mb-3">
+            Admin users cannot add products to cart. Please use the admin dashboard to manage products.
+          </div>
+          <a routerLink="/products" class="btn btn-outline-secondary">Continue Shopping</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

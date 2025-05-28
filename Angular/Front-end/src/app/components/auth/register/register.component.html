@@ -1,0 +1,158 @@
+<div class="auth-page">
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6 col-xl-5">
+        <div class="card auth-card shadow">
+          <div class="card-header bg-success text-white text-center py-3">
+            <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create an Account</h3>
+          </div>
+          
+          <div class="card-body p-4 p-md-5">
+            <div *ngIf="error" class="alert alert-danger d-flex align-items-center" role="alert">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              <div>{{ error }}</div>
+            </div>
+            
+            <form #registerForm="ngForm" (ngSubmit)="register(registerForm)">
+              <div class="mb-4">
+                <label for="name" class="form-label">Full Name</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light">
+                    <i class="fas fa-user text-muted"></i>
+                  </span>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="name" 
+                    name="name" 
+                    placeholder="Enter your full name"
+                    [(ngModel)]="formData.name" 
+                    required
+                    #name="ngModel"
+                    [ngClass]="{'is-invalid': name.invalid && (name.dirty || name.touched)}">
+                </div>
+                <div *ngIf="name.invalid && (name.dirty || name.touched)" class="text-danger mt-1 small">
+                  <span *ngIf="name.errors?.['required']"><i class="fas fa-info-circle me-1"></i>Name is required</span>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label for="email" class="form-label">Email address</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light">
+                    <i class="fas fa-envelope text-muted"></i>
+                  </span>
+                  <input 
+                    type="email" 
+                    class="form-control" 
+                    id="email" 
+                    name="email" 
+                    placeholder="name@example.com"
+                    [(ngModel)]="formData.email" 
+                    required 
+                    email
+                    #email="ngModel"
+                    [ngClass]="{'is-invalid': email.invalid && (email.dirty || email.touched)}">
+                </div>
+                <div *ngIf="email.invalid && (email.dirty || email.touched)" class="text-danger mt-1 small">
+                  <span *ngIf="email.errors?.['required']"><i class="fas fa-info-circle me-1"></i>Email is required</span>
+                  <span *ngIf="email.errors?.['email']"><i class="fas fa-info-circle me-1"></i>Please enter a valid email address</span>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light">
+                    <i class="fas fa-lock text-muted"></i>
+                  </span>
+                  <input 
+                    [type]="showPassword ? 'text' : 'password'" 
+                    class="form-control" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Create a password"
+                    [(ngModel)]="formData.password" 
+                    required
+                    minlength="6"
+                    #password="ngModel"
+                    (ngModelChange)="checkPasswordStrength($event)"
+                    [ngClass]="{'is-invalid': password.invalid && (password.dirty || password.touched)}">
+                  <button 
+                    class="btn btn-outline-secondary" 
+                    type="button" 
+                    (click)="togglePasswordVisibility()"
+                    tabindex="-1">
+                    <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                  </button>
+                </div>
+                <div *ngIf="password.invalid && (password.dirty || password.touched)" class="text-danger mt-1 small">
+                  <span *ngIf="password.errors?.['required']"><i class="fas fa-info-circle me-1"></i>Password is required</span>
+                  <span *ngIf="password.errors?.['minlength']"><i class="fas fa-info-circle me-1"></i>Password must be at least 6 characters</span>
+                </div>
+                <div class="password-strength mt-2" *ngIf="formData.password">
+                  <div class="progress" style="height: 5px;">
+                    <div class="progress-bar" [ngClass]="passwordStrengthClass" [style.width.%]="passwordStrength"></div>
+                  </div>
+                  <small class="mt-1 d-block" [ngClass]="passwordStrengthTextClass">
+                    <i class="fas" [ngClass]="passwordStrengthIconClass"></i> 
+                    {{passwordStrengthText}}
+                  </small>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light">
+                    <i class="fas fa-lock text-muted"></i>
+                  </span>
+                  <input 
+                    [type]="showPassword ? 'text' : 'password'" 
+                    class="form-control" 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    placeholder="Confirm your password"
+                    [(ngModel)]="formData.confirmPassword" 
+                    required
+                    #confirmPassword="ngModel"
+                    (ngModelChange)="checkPasswordMatch()"
+                    [ngClass]="{'is-invalid': (confirmPassword.invalid && (confirmPassword.dirty || confirmPassword.touched)) || passwordMismatch}">
+                </div>
+                <div *ngIf="(confirmPassword.invalid && (confirmPassword.dirty || confirmPassword.touched)) || passwordMismatch" class="text-danger mt-1 small">
+                  <span *ngIf="confirmPassword.errors?.['required']"><i class="fas fa-info-circle me-1"></i>Please confirm your password</span>
+                  <span *ngIf="passwordMismatch"><i class="fas fa-info-circle me-1"></i>Passwords do not match</span>
+                </div>
+              </div>
+              
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="termsAgreed" name="termsAgreed" [(ngModel)]="formData.termsAgreed" required #terms="ngModel">
+                <label class="form-check-label" for="termsAgreed">
+                  I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a>
+                </label>
+                <div *ngIf="terms.invalid && (terms.dirty || terms.touched)" class="text-danger mt-1 small">
+                  <span *ngIf="terms.errors?.['required']"><i class="fas fa-info-circle me-1"></i>You must agree to the terms</span>
+                </div>
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button 
+                  type="submit" 
+                  class="btn btn-success btn-lg" 
+                  [disabled]="registerForm.invalid || isSubmitting || passwordMismatch || !formData.termsAgreed">
+                  <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  <i *ngIf="!isSubmitting" class="fas fa-user-plus me-2"></i>
+                  Create Account
+                </button>
+              </div>
+            </form>
+            
+            <div class="text-center mt-4">
+              <p class="mb-0">Already have an account? <a routerLink="/auth/login" class="text-success fw-bold">Log In</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

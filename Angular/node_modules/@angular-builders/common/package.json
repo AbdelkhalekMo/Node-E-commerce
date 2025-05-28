@@ -1,0 +1,32 @@
+{
+  "name": "@angular-builders/common",
+  "version": "3.0.1",
+  "description": "Common utility functions shared between @angular-builders packages",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "JeB Barabanov",
+  "license": "MIT",
+  "engines": {
+    "node": "^18.19.1 || ^20.11.1 || >=22.0.0"
+  },
+  "scripts": {
+    "prebuild": "yarn clean",
+    "build": "yarn prebuild && tsc",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@angular-devkit/core": "^19.0.0",
+    "ts-node": "^10.0.0",
+    "tsconfig-paths": "^4.1.0"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "typescript": "5.8.3"
+  },
+  "gitHead": "dbc033f81402238f7f26768a5beaccb230917d4c"
+}

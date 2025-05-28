@@ -1,0 +1,151 @@
+<div class="container mt-4">
+  <!-- Page header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="display-6" *ngIf="!category">All Products</h2>
+      <h2 class="display-6" *ngIf="category">{{ category | titlecase }} Products</h2>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+        <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadProducts()">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin message -->
+  <div class="row" *ngIf="isAdmin && !error">
+    <div class="col-12 mb-3">
+      <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle me-2"></i> You are logged in as an admin. Cart functionality is disabled. Use the admin dashboard to manage products.
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading indicator -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="!isLoading && !error">
+    <!-- Filters sidebar -->
+    <div class="col-md-3 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Categories</h5>
+        </div>
+        <div class="card-body">
+          <div class="list-group list-group-flush">
+            <a routerLink="/products" 
+               [class.active]="!category" 
+               class="list-group-item list-group-item-action">
+              All Products
+            </a>
+            <a *ngFor="let cat of categories" 
+               routerLink="/products/category/{{ cat }}" 
+               [class.active]="category === cat" 
+               class="list-group-item list-group-item-action">
+              {{ cat | titlecase }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Price Range</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="minPrice" class="form-label">Min Price</label>
+            <input type="range" class="form-range" id="minPrice" min="0" max="1000" step="10" [(ngModel)]="priceRange.min">
+            <div class="text-end">${{ priceRange.min }}</div>
+          </div>
+          <div class="mb-3">
+            <label for="maxPrice" class="form-label">Max Price</label>
+            <input type="range" class="form-range" id="maxPrice" min="0" max="1000" step="10" [(ngModel)]="priceRange.max">
+            <div class="text-end">${{ priceRange.max }}</div>
+          </div>
+          <div class="d-grid">
+            <button class="btn btn-primary" (click)="applyFilters()">Apply Filters</button>
+          </div>
+          <div class="d-grid mt-2">
+            <button class="btn btn-outline-secondary" (click)="resetFilters()">Reset Filters</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products grid -->
+    <div class="col-md-9">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search products..." 
+                   [(ngModel)]="searchTerm" 
+                   (input)="onSearchChange($event)"
+                   (keyup.enter)="applyFilters()">
+            <button class="btn btn-outline-secondary" type="button" (click)="applyFilters()">Search</button>
+            <button *ngIf="searchTerm" class="btn btn-outline-danger" type="button" (click)="searchTerm=''; onSearchChange($event)">
+              <i class="bi bi-x"></i> Clear
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <select class="form-select" [(ngModel)]="sortOption" (change)="sortProducts()">
+            <option value="default">Featured</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name-asc">Name: A to Z</option>
+            <option value="name-desc">Name: Z to A</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- No products message -->
+      <div class="row" *ngIf="displayedProducts.length === 0">
+        <div class="col-12">
+          <div class="alert alert-info" role="alert">
+            No products found matching your criteria. Try changing your filters or search term.
+          </div>
+        </div>
+      </div>
+
+      <!-- Products grid -->
+      <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col" *ngFor="let product of displayedProducts">
+          <div class="card h-100 shadow-sm product-card">
+            <div class="product-image-container">
+              <img [src]="product.imageUrl || product.image || 'assets/images/placeholder.png'" 
+                   class="card-img-top product-image" 
+                   [alt]="product.title || product.name || 'Product'">
+            </div>
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title product-title">{{ product.title || product.name || 'Untitled Product' }}</h5>
+              <p class="card-text text-muted mb-1">{{ product.category | titlecase }}</p>
+              <p class="card-text product-desc">
+                {{ (product.description || 'No description available') | slice:0:100 }}
+                {{ (product.description && product.description.length > 100) ? '...' : '' }}
+              </p>
+              <div class="d-flex justify-content-between align-items-center mt-auto">
+                <h5 class="text-primary mb-0">${{ (product.price || 0).toFixed(2) }}</h5>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-outline-primary" [routerLink]="['/products', product._id]">View</button>
+                  <button type="button" class="btn btn-sm btn-primary" *ngIf="!isAdmin" (click)="addToCart(product)">Add to Cart</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

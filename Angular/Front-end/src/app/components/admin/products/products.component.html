@@ -1,0 +1,248 @@
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2 class="display-6">Product Management</h2>
+    </div>
+    <div class="col-md-6 text-md-end">
+      <button class="btn btn-primary" (click)="toggleAddProductForm()">
+        {{ isAddingProduct ? 'Cancel' : 'Add New Product' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Success message -->
+  <div class="row" *ngIf="successMessage">
+    <div class="col-12">
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ successMessage }}
+        <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error alert -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add product form -->
+  <div class="row mb-4" *ngIf="isAddingProduct">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Add New Product</h5>
+        </div>
+        <div class="card-body">
+          <form (submit)="addProduct()">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="name" name="name" [(ngModel)]="newProduct.name" required>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="title" class="form-label">Display Title (optional)</label>
+                <input type="text" class="form-control" id="title" name="title" [(ngModel)]="newProduct.title">
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="price" class="form-label">Price</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="price" name="price" [(ngModel)]="newProduct.price" min="0" step="0.01" required>
+                </div>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="stock" class="form-label">Stock</label>
+                <input type="number" class="form-control" id="stock" name="stock" [(ngModel)]="newProduct.stock" min="0" required>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="category" class="form-label">Category</label>
+                <select class="form-select" id="category" name="category" [(ngModel)]="newProduct.category" required>
+                  <option value="" disabled>Select category</option>
+                  <option value="electronics">Electronics</option>
+                  <option value="clothing">Clothing</option>
+                  <option value="books">Books</option>
+                  <option value="home">Home & Kitchen</option>
+                  <option value="beauty">Beauty</option>
+                  <option value="sports">Sports & Outdoors</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="imageUrl" class="form-label">Image URL</label>
+              <input type="url" class="form-control" id="imageUrl" name="imageUrl" [(ngModel)]="newProduct.imageUrl" required>
+              <div class="form-text">Enter a valid image URL starting with http:// or https://</div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" [(ngModel)]="newProduct.description" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="isFeatured" name="isFeatured" [(ngModel)]="newProduct.isFeatured">
+              <label class="form-check-label" for="isFeatured">Featured Product</label>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="button" class="btn btn-outline-secondary" (click)="toggleAddProductForm()">Cancel</button>
+              <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Save Product
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit product form -->
+  <div class="row mb-4" *ngIf="isEditing && selectedProduct">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Edit Product</h5>
+        </div>
+        <div class="card-body">
+          <form (submit)="updateProduct()">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="edit-name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="edit-name" name="name" [(ngModel)]="selectedProduct.name" required>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="edit-title" class="form-label">Display Title (optional)</label>
+                <input type="text" class="form-control" id="edit-title" name="title" [(ngModel)]="selectedProduct.title">
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="edit-price" class="form-label">Price</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="edit-price" name="price" [(ngModel)]="selectedProduct.price" min="0" step="0.01" required>
+                </div>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="edit-stock" class="form-label">Stock</label>
+                <input type="number" class="form-control" id="edit-stock" name="stock" [(ngModel)]="selectedProduct.stock" min="0" required>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="edit-category" class="form-label">Category</label>
+                <select class="form-select" id="edit-category" name="category" [(ngModel)]="selectedProduct.category" required>
+                  <option value="" disabled>Select category</option>
+                  <option value="electronics">Electronics</option>
+                  <option value="clothing">Clothing</option>
+                  <option value="books">Books</option>
+                  <option value="home">Home & Kitchen</option>
+                  <option value="beauty">Beauty</option>
+                  <option value="sports">Sports & Outdoors</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="edit-imageUrl" class="form-label">Image URL</label>
+              <input type="url" class="form-control" id="edit-imageUrl" name="imageUrl" [(ngModel)]="selectedProduct.imageUrl" required>
+              <div class="form-text">Enter a valid image URL starting with http:// or https://</div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="edit-description" class="form-label">Description</label>
+              <textarea class="form-control" id="edit-description" name="description" [(ngModel)]="selectedProduct.description" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="edit-isFeatured" name="isFeatured" [(ngModel)]="selectedProduct.isFeatured">
+              <label class="form-check-label" for="edit-isFeatured">Featured Product</label>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">Cancel</button>
+              <button type="submit" class="btn btn-primary" [disabled]="isLoading">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                Update Product
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading && !isAddingProduct && !isEditing">
+    <div class="col-12 text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products table -->
+  <div class="row" *ngIf="!isLoading || isAddingProduct || isEditing">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Image</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Category</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Stock</th>
+                  <th scope="col">Featured</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="products.length === 0">
+                  <td colspan="7" class="text-center p-4">No products available</td>
+                </tr>
+                <tr *ngFor="let product of products">
+                  <td class="align-middle" style="width: 80px;">
+                    <img [src]="product.imageUrl || product.image" alt="{{ product.name || product.title }}" class="img-thumbnail" style="max-width: 60px; max-height: 60px;">
+                  </td>
+                  <td class="align-middle">{{ product.name || product.title }}</td>
+                  <td class="align-middle">{{ product.category | titlecase }}</td>
+                  <td class="align-middle">${{ product.price.toFixed(2) }}</td>
+                  <td class="align-middle">{{ product.stock || product.quantity || 0 }}</td>
+                  <td class="align-middle">
+                    <span *ngIf="product.isFeatured" class="badge bg-success">Yes</span>
+                    <span *ngIf="!product.isFeatured" class="badge bg-secondary">No</span>
+                  </td>
+                  <td class="align-middle">
+                    <div class="btn-group" role="group">
+                      <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="editProduct(product)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="deleteProduct(product._id!)">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

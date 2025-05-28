@@ -1,0 +1,55 @@
+.auth-page {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+}
+
+.auth-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: none;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .card-header {
+    border-bottom: none;
+  }
+}
+
+.input-group-text {
+  border-right: none;
+}
+
+.form-control {
+  border-left: none;
+  
+  &:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+  }
+}
+
+.btn-outline-secondary {
+  border-left: none;
+  
+  &:focus {
+    box-shadow: none;
+  }
+}
+
+.password-strength {
+  .progress {
+    height: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+  }
+}
+
+.form-check-input:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+}

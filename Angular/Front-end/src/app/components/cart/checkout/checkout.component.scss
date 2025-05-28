@@ -1,0 +1,27 @@
+/* Checkout component styles */
+.checkout-container {
+  padding: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.payment-methods {
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.order-summary {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 5px;
+  
+  .product-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+  }
+}
