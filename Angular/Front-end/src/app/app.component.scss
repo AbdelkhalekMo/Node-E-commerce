@@ -1,0 +1,49 @@
+/* App Component Styles */
+main {
+  min-height: calc(100vh - 200px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  
+  &.content-loading {
+    opacity: 0.6;
+    transform: scale(0.98);
+    pointer-events: none;
+  }
+}
+
+/* Page Transition Animation */
+:host {
+  display: block;
+  position: relative;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100, #f8f9fa);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-400, #ced4da);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500, #adb5bd);
+}
+
+/* Focus Styling */
+:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 63, 81, 181), 0.25);
+}
+
+/* Selection Styling */
+::selection {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.2);
+  color: var(--gray-900, #212529);
+}

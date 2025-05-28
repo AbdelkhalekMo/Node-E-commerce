@@ -1,0 +1,336 @@
+/* Enhanced Styles for E-commerce Project */
+
+/* Color Variables */
+:root {
+  --primary-color: #3f51b5;
+  --primary-light: #757de8;
+  --primary-dark: #002984;
+  --secondary-color: #ff4081;
+  --secondary-light: #ff79b0;
+  --secondary-dark: #c60055;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --danger-color: #f44336;
+  --info-color: #2196f3;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-300: #dee2e6;
+  --gray-400: #ced4da;
+  --gray-500: #adb5bd;
+  --gray-600: #6c757d;
+  --gray-700: #495057;
+  --gray-800: #343a40;
+  --gray-900: #212529;
+}
+
+/* Global Transitions */
+body {
+  transition: background-color 0.3s ease;
+}
+
+/* Button Enhancements */
+.btn {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-dark);
+  border-color: var(--secondary-dark);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Card Enhancements */
+.card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+.card-header {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.1);
+  border-bottom: 1px solid rgba(var(--primary-color-rgb, 63, 81, 181), 0.2);
+}
+
+/* Form Control Enhancements */
+.form-control, .form-select {
+  transition: all 0.3s ease;
+  border: 1px solid var(--gray-300);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb, 63, 81, 181), 0.25);
+}
+
+/* Table Enhancements */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.1);
+  color: var(--gray-800);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+}
+
+/* Badge Enhancements */
+.badge {
+  transition: all 0.3s ease;
+}
+
+/* Alert Enhancements */
+.alert {
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+/* Navbar Enhancements */
+.navbar {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.navbar-brand {
+  transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+.nav-link {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-link:hover::after {
+  width: 80%;
+}
+
+/* Product Card Enhancements */
+.product-card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  height: 100%;
+}
+
+.product-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+}
+
+.product-card .card-img-top {
+  transition: all 0.5s ease;
+  object-fit: cover;
+  height: 200px;
+}
+
+.product-card:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+/* Pagination Enhancements */
+.pagination .page-link {
+  transition: all 0.3s ease;
+  color: var(--primary-color);
+}
+
+.pagination .page-link:hover {
+  background-color: var(--primary-light);
+  color: white;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Modal Enhancements */
+.modal-content {
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Spinner Enhancements */
+.spinner-border {
+  animation-duration: 0.8s;
+}
+
+/* List Group Enhancements */
+.list-group-item {
+  transition: all 0.3s ease;
+  border-left: 0;
+  border-right: 0;
+}
+
+.list-group-item:hover {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+}
+
+.list-group-item.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Cart Item Animation */
+.cart-item {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Checkout Process Steps */
+.checkout-step {
+  transition: all 0.3s ease;
+}
+
+.checkout-step.active {
+  transform: scale(1.05);
+}
+
+/* Order History Item */
+.order-item {
+  transition: all 0.3s ease;
+}
+
+.order-item:hover {
+  background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.05);
+}
+
+/* Profile Section */
+.profile-section {
+  transition: all 0.3s ease;
+}
+
+.profile-avatar {
+  transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+}
+
+/* Admin Dashboard Widgets */
+.admin-widget {
+  transition: all 0.3s ease;
+}
+
+.admin-widget:hover {
+  transform: translateY(-5px);
+}
+
+/* Fix for RGB variables */
+:root {
+  --primary-color-rgb: 63, 81, 181;
+  --secondary-color-rgb: 255, 64, 129;
+  --success-color-rgb: 76, 175, 80;
+  --warning-color-rgb: 255, 152, 0;
+  --danger-color-rgb: 244, 67, 54;
+  --info-color-rgb: 33, 150, 243;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body.dark-mode {
+    background-color: var(--gray-900);
+    color: var(--light-color);
+  }
+  
+  body.dark-mode .card {
+    background-color: var(--gray-800);
+    color: var(--light-color);
+  }
+  
+  body.dark-mode .form-control,
+  body.dark-mode .form-select {
+    background-color: var(--gray-700);
+    color: var(--light-color);
+    border-color: var(--gray-600);
+  }
+} 
