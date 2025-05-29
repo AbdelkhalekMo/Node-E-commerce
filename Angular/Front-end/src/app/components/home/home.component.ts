@@ -53,6 +53,16 @@ export class HomeComponent implements OnInit {
           console.error('Unexpected response format:', response);
           this.error = 'Received invalid data format from server';
         }
+        
+        // Normalize products to ensure consistent data
+        this.normalizeProducts();
+        
+        // Handle empty results case
+        if (this.featuredProducts.length === 0) {
+          console.log('No featured products found');
+          // Don't set an error, just log it
+        }
+        
         this.isLoading = false;
       },
       error: (err: HttpErrorResponse) => {
@@ -66,10 +76,46 @@ export class HomeComponent implements OnInit {
           this.error = 'Authentication required to view featured products.';
         } else if (err.status === 404) {
           this.error = 'No featured products found.';
+        } else if (err.status === 0) {
+          this.error = 'Cannot connect to the server. Please check if the backend is running.';
         } else {
           this.error = 'Failed to load featured products. Please try again later.';
         }
       }
+    });
+  }
+
+  // Normalize products to ensure all required fields are present
+  private normalizeProducts(): void {
+    this.featuredProducts = this.featuredProducts.map(product => {
+      const normalizedProduct = { ...product };
+      
+      // Ensure name field is set
+      if (!normalizedProduct.name && normalizedProduct.title) {
+        normalizedProduct.name = normalizedProduct.title;
+      } else if (!normalizedProduct.name) {
+        normalizedProduct.name = 'Untitled Product';
+      }
+      
+      // Ensure title field is set
+      if (!normalizedProduct.title && normalizedProduct.name) {
+        normalizedProduct.title = normalizedProduct.name;
+      } else if (!normalizedProduct.title) {
+        normalizedProduct.title = normalizedProduct.name || 'Untitled Product';
+      }
+      
+      // Ensure image field is set
+      if (!normalizedProduct.image && normalizedProduct.imageUrl) {
+        normalizedProduct.image = normalizedProduct.imageUrl;
+      } else if (!normalizedProduct.imageUrl && normalizedProduct.image) {
+        normalizedProduct.imageUrl = normalizedProduct.image;
+      } else if (!normalizedProduct.image && !normalizedProduct.imageUrl) {
+        // Set default image if none exists
+        normalizedProduct.image = 'https://via.placeholder.com/300';
+        normalizedProduct.imageUrl = 'https://via.placeholder.com/300';
+      }
+      
+      return normalizedProduct;
     });
   }
 

@@ -2,8 +2,12 @@
   <div class="row mb-4">
     <div class="col-md-6">
       <h2 class="display-6">Product Management</h2>
+      <p class="text-muted" *ngIf="!isLoading">Total Products: {{ allProducts.length }}</p>
     </div>
     <div class="col-md-6 text-md-end">
+      <button class="btn btn-outline-secondary me-2" (click)="loadProducts()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
       <button class="btn btn-primary" (click)="toggleAddProductForm()">
         {{ isAddingProduct ? 'Cancel' : 'Add New Product' }}
       </button>
@@ -26,6 +30,11 @@
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
         {{ error }}
         <button type="button" class="btn-close" (click)="clearMessages()" aria-label="Close"></button>
+      </div>
+      <div class="text-center mt-3 mb-3">
+        <button class="btn btn-primary" (click)="loadProducts()">
+          <i class="bi bi-arrow-clockwise me-1"></i> Retry Loading Products
+        </button>
       </div>
     </div>
   </div>
@@ -305,6 +314,7 @@
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
+      <p class="mt-2">Loading products, please wait...</p>
     </div>
   </div>
 
@@ -330,10 +340,17 @@
                 <tr *ngIf="filteredProducts.length === 0">
                   <td colspan="7" class="text-center p-4">
                     <div *ngIf="searchQuery || categoryFilter !== 'all' || priceFilter !== 'all' || stockFilter !== 'all' || featuredFilter !== 'all'">
-                      No products match your search criteria
+                      <i class="fas fa-filter mb-2" style="font-size: 24px; color: #6c757d;"></i>
+                      <p>No products match your search criteria</p>
+                      <button class="btn btn-sm btn-outline-primary" (click)="resetFilters()">Clear Filters</button>
                     </div>
                     <div *ngIf="!searchQuery && categoryFilter === 'all' && priceFilter === 'all' && stockFilter === 'all' && featuredFilter === 'all'">
-                      No products available
+                      <i class="fas fa-box-open mb-2" style="font-size: 24px; color: #6c757d;"></i>
+                      <p>No products available in the database</p>
+                      <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary me-2" (click)="loadProducts()">Refresh</button>
+                        <button class="btn btn-sm btn-primary" (click)="toggleAddProductForm()">Add Product</button>
+                      </div>
                     </div>
                   </td>
                 </tr>

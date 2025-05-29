@@ -142,18 +142,54 @@ export class AdminProductsComponent implements OnInit {
     this.loadProducts();
   }
 
+  checkForMissingProducts(): void {
+    const searchName = "Men's Classic Fit Dress Shirt";
+    console.log(`Checking if "${searchName}" exists in loaded products...`);
+    
+    const foundProduct = this.allProducts.find(p => 
+      (p.name && p.name.includes(searchName)) || 
+      (p.title && p.title.includes(searchName))
+    );
+    
+    if (foundProduct) {
+      console.log('Product found in allProducts:', foundProduct);
+      
+      // Check if it's in filtered products
+      const inFiltered = this.filteredProducts.some(p => p._id === foundProduct._id);
+      console.log('Product exists in filteredProducts:', inFiltered);
+      
+      if (!inFiltered) {
+        console.log('Product exists in allProducts but not in filteredProducts!');
+        console.log('Current filters:', {
+          searchQuery: this.searchQuery,
+          categoryFilter: this.categoryFilter,
+          priceFilter: this.priceFilter,
+          stockFilter: this.stockFilter,
+          featuredFilter: this.featuredFilter
+        });
+      }
+    } else {
+      console.log(`Product "${searchName}" NOT FOUND in loaded products!`);
+    }
+  }
+
   loadProducts(): void {
     this.isLoading = true;
     this.error = '';
     
+    console.log('Loading products for admin...');
     this.productService.getAllProducts().subscribe({
       next: (response) => {
+        console.log('Raw product response:', response);
+        
         // Handle paginated response
         if (isPaginatedResponse<Product>(response)) {
+          console.log(`Received paginated response with ${response.docs.length} products out of ${response.totalDocs} total`);
           this.allProducts = response.docs;
         } 
         // If response is already an array
         else if (Array.isArray(response)) {
+          console.log(`Received array response with ${response.length} products`);
           this.allProducts = response;
         } 
         // Fallback to empty array if not recognized format
@@ -163,10 +199,77 @@ export class AdminProductsComponent implements OnInit {
           this.error = 'Received invalid data format from server';
         }
         
+        console.log('Products before normalization:', this.allProducts.length);
+        
+        if (this.allProducts.length === 0) {
+          console.warn('No products found in the response');
+          // This might be an API or authentication issue
+          this.error = 'No products found. Please check your connection or reload the page.';
+        }
+        
+        // Normalize data to ensure consistent field usage
+        this.allProducts = this.allProducts.map(product => {
+          const normalizedProduct = { ...product };
+          
+          // Ensure name field is set
+          if (!normalizedProduct.name && normalizedProduct.title) {
+            normalizedProduct.name = normalizedProduct.title;
+          } else if (!normalizedProduct.name) {
+            normalizedProduct.name = 'Untitled Product';
+          }
+          
+          // Ensure title field is set
+          if (!normalizedProduct.title && normalizedProduct.name) {
+            normalizedProduct.title = normalizedProduct.name;
+          } else if (!normalizedProduct.title) {
+            normalizedProduct.title = normalizedProduct.name || 'Untitled Product';
+          }
+          
+          // Ensure image field is set
+          if (!normalizedProduct.image && normalizedProduct.imageUrl) {
+            normalizedProduct.image = normalizedProduct.imageUrl;
+          } else if (!normalizedProduct.imageUrl && normalizedProduct.image) {
+            normalizedProduct.imageUrl = normalizedProduct.image;
+          } else if (!normalizedProduct.image && !normalizedProduct.imageUrl) {
+            // Set default image if none exists
+            normalizedProduct.image = 'https://via.placeholder.com/300';
+            normalizedProduct.imageUrl = 'https://via.placeholder.com/300';
+          }
+          
+          // Ensure stock field is set
+          if (normalizedProduct.quantity !== undefined && normalizedProduct.stock === undefined) {
+            normalizedProduct.stock = normalizedProduct.quantity;
+          } else if (normalizedProduct.stock !== undefined && normalizedProduct.quantity === undefined) {
+            normalizedProduct.quantity = normalizedProduct.stock;
+          } else if (normalizedProduct.stock === undefined && normalizedProduct.quantity === undefined) {
+            normalizedProduct.stock = 0;
+            normalizedProduct.quantity = 0;
+          }
+          
+          // Ensure isFeatured is boolean
+          if (normalizedProduct.isFeatured === undefined) {
+            normalizedProduct.isFeatured = false;
+          }
+          
+          // Ensure category is lowercase for consistent filtering
+          if (normalizedProduct.category) {
+            normalizedProduct.category = normalizedProduct.category.toLowerCase();
+          } else {
+            normalizedProduct.category = 'other';
+          }
+          
+          return normalizedProduct;
+        });
+        
+        console.log('Products after normalization:', this.allProducts.length);
+        
         this.products = [...this.allProducts];
         this.filteredProducts = [...this.allProducts];
         this.applyFilters(); // Apply any existing filters
         this.isLoading = false;
+        
+        // Check for specific missing products
+        setTimeout(() => this.checkForMissingProducts(), 500);
       },
       error: (err: HttpErrorResponse) => {
         this.isLoading = false;
@@ -181,8 +284,10 @@ export class AdminProductsComponent implements OnInit {
           this.error = 'Authentication required. Please log in to manage products.';
           // Optionally redirect to login
           // this.router.navigate(['/login']);
+        } else if (err.status === 0) {
+          this.error = 'Network error. Please check your internet connection and try again.';
         } else {
-          this.error = 'Failed to load products. Please try again.';
+          this.error = `Failed to load products: ${err.message || 'Unknown error'}`;
         }
       }
     });
@@ -190,80 +295,129 @@ export class AdminProductsComponent implements OnInit {
   
   // Apply search and filters
   applyFilters(): void {
+    console.log('Applying filters with:', {
+      searchQuery: this.searchQuery,
+      categoryFilter: this.categoryFilter,
+      priceFilter: this.priceFilter,
+      stockFilter: this.stockFilter,
+      featuredFilter: this.featuredFilter
+    });
+    
+    console.log('Starting with', this.allProducts.length, 'products');
+    
+    // Check if allProducts is empty
+    if (this.allProducts.length === 0) {
+      console.warn('No products to filter');
+      this.filteredProducts = [];
+      return;
+    }
+    
     let result = [...this.allProducts];
     
     // Apply category filter
     if (this.categoryFilter !== 'all') {
-      result = result.filter(product => product.category === this.categoryFilter);
+      result = result.filter(product => {
+        // Handle case insensitivity and missing category
+        const productCategory = (product.category || '').toLowerCase();
+        return productCategory === this.categoryFilter.toLowerCase();
+      });
+      console.log(`After category filter (${this.categoryFilter}):`, result.length, 'products');
     }
     
     // Apply price filter
     if (this.priceFilter !== 'all') {
       result = result.filter(product => {
-        const price = product.price;
+        // Handle missing price
+        const price = product.price || 0;
+        let matches = false;
         switch (this.priceFilter) {
           case 'under25':
-            return price < 25;
+            matches = price < 25;
+            break;
           case '25to50':
-            return price >= 25 && price <= 50;
+            matches = price >= 25 && price <= 50;
+            break;
           case '50to100':
-            return price > 50 && price <= 100;
+            matches = price > 50 && price <= 100;
+            break;
           case 'over100':
-            return price > 100;
+            matches = price > 100;
+            break;
           default:
-            return true;
+            matches = true;
         }
+        return matches;
       });
+      console.log(`After price filter (${this.priceFilter}):`, result.length, 'products');
     }
     
     // Apply stock filter
     if (this.stockFilter !== 'all') {
       result = result.filter(product => {
-        const stock = product.stock || product.quantity || 0;
+        // Use stock or quantity or default to 0
+        const stock = product.stock ?? product.quantity ?? 0;
+        let matches = false;
         switch (this.stockFilter) {
           case 'instock':
-            return stock > 0;
+            matches = stock > 0;
+            break;
           case 'lowstock':
-            return stock > 0 && stock <= 10;
+            matches = stock > 0 && stock <= 10;
+            break;
           case 'outofstock':
-            return stock <= 0;
+            matches = stock <= 0;
+            break;
           default:
-            return true;
+            matches = true;
         }
+        return matches;
       });
+      console.log(`After stock filter (${this.stockFilter}):`, result.length, 'products');
     }
     
     // Apply featured filter
     if (this.featuredFilter !== 'all') {
       result = result.filter(product => {
+        // Handle undefined isFeatured (treat as false)
+        const isFeatured = product.isFeatured ?? false;
+        let matches = false;
         switch (this.featuredFilter) {
           case 'featured':
-            return product.isFeatured === true;
+            matches = isFeatured === true;
+            break;
           case 'nonfeatured':
-            return product.isFeatured === false;
+            matches = isFeatured === false;
+            break;
           default:
-            return true;
+            matches = true;
         }
+        return matches;
       });
+      console.log(`After featured filter (${this.featuredFilter}):`, result.length, 'products');
     }
     
     // Apply search filter if there's a query
     if (this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase().trim();
       result = result.filter(product => {
+        // Handle potentially undefined fields
         const name = (product.name || '').toLowerCase();
         const title = (product.title || '').toLowerCase();
         const description = (product.description || '').toLowerCase();
         const category = (product.category || '').toLowerCase();
         
-        return name.includes(query) || 
+        const matches = name.includes(query) || 
                title.includes(query) || 
                description.includes(query) || 
                category.includes(query);
+               
+        return matches;
       });
+      console.log(`After search query (${this.searchQuery}):`, result.length, 'products');
     }
     
     this.filteredProducts = result;
+    console.log('Final filtered products:', this.filteredProducts.length);
   }
   
   // Reset all filters
@@ -290,7 +444,7 @@ export class AdminProductsComponent implements OnInit {
     
     // Ensure required fields are set
     if (!this.newProduct.name) {
-      this.newProduct.name = this.newProduct.title;
+      this.newProduct.name = this.newProduct.title || '';
     }
     
     if (!this.newProduct.image && this.newProduct.imageUrl) {

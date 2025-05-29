@@ -106,17 +106,23 @@
           <div class="row">
             <div class="col-md-4 mb-3 mb-md-0">
               <div class="d-grid">
-                <a routerLink="/admin" class="btn btn-outline-secondary">Back to Dashboard</a>
+                <button class="btn btn-outline-primary" (click)="downloadRevenueReport()">
+                  <i class="bi bi-download me-2"></i>Download Report
+                </button>
               </div>
             </div>
             <div class="col-md-4 mb-3 mb-md-0">
               <div class="d-grid">
-                <a routerLink="/admin/orders" class="btn btn-outline-primary">View All Orders</a>
+                <button class="btn btn-outline-success" (click)="printRevenueReport()">
+                  <i class="bi bi-printer me-2"></i>Print Report
+                </button>
               </div>
             </div>
             <div class="col-md-4">
               <div class="d-grid">
-                <a routerLink="/admin/products" class="btn btn-outline-success">Manage Products</a>
+                <button class="btn btn-outline-secondary" (click)="emailRevenueReport()">
+                  <i class="bi bi-envelope me-2"></i>Email Report
+                </button>
               </div>
             </div>
           </div>

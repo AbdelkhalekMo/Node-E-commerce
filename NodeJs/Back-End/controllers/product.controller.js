@@ -55,6 +55,23 @@ export const getAllProducts = async (req, res) => {
 
     // Build query
     const query = category ? { category } : {};
+    
+    // If limit is 0, return all products without pagination
+    if (parseInt(limit) === 0) {
+      console.log('Fetching all products without pagination');
+      const sortOption = sort ? { [sort]: 1 } : { createdAt: -1 };
+      
+      const products = await Product.find(query)
+        .sort(sortOption)
+        .lean();
+      
+      // Cache results
+      setCache(cacheKey, products);
+      
+      return res.json(products);
+    }
+    
+    // Otherwise use pagination
     const options = {
       page: parseInt(page),
       limit: parseInt(limit),

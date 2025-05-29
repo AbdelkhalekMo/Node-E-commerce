@@ -164,12 +164,20 @@ export class AdminOrdersComponent implements OnInit {
   }
   
   updateOrderStatus(orderId: string, status: string): void {
+    if (!orderId || !status) {
+      console.error('Missing orderId or status for order update');
+      this.error = 'Invalid order data. Please try again.';
+      return;
+    }
+    
+    console.log(`Updating order ${orderId} status to ${status}`);
     this.isLoading = true;
+    this.error = '';
     
     this.orderService.updateOrderStatus(orderId, status).pipe(
       catchError(error => {
         console.error('Error updating order status:', error);
-        this.error = 'Failed to update order status. Please try again.';
+        this.error = `Failed to update order status: ${error.message || 'Unknown error'}`;
         return of(null);
       }),
       finalize(() => {
@@ -178,7 +186,21 @@ export class AdminOrdersComponent implements OnInit {
     ).subscribe({
       next: (response) => {
         if (response) {
-          // Refresh orders list
+          console.log('Order status updated successfully:', response);
+          // Update the order in the local array to avoid a full reload
+          const index = this.allOrders.findIndex(o => o._id === orderId);
+          if (index !== -1) {
+            // Create a copy of the order with the updated status
+            const updatedOrder = {...this.allOrders[index], status: status};
+            this.allOrders[index] = updatedOrder;
+            // Reapply filters to update the filtered list
+            this.applyFilters();
+          } else {
+            // If we can't find the order, reload all orders
+            this.loadOrders();
+          }
+        } else {
+          console.warn('No response from updateOrderStatus');
           this.loadOrders();
         }
       }

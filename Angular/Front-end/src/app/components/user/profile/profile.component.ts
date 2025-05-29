@@ -25,6 +25,7 @@ export class ProfileComponent implements OnInit {
   isLoading = true;
   error = '';
   successMessage = '';
+  isCancelling: string = ''; // Stores order ID that's being cancelled
   
   // For profile editing
   editMode = false;
@@ -99,6 +100,45 @@ export class ProfileComponent implements OnInit {
     // @ts-ignore - handle both structures
     return order.status || order.orderStatus || 'processing';
   }
+  
+  // Order cancellation methods
+  canCancelOrder(order: Order): boolean {
+    const status = this.getOrderStatus(order);
+    // Only allow cancellation for pending or processing orders
+    return status === 'pending' || status === 'processing';
+  }
+  
+  confirmCancelOrder(order: Order): void {
+    if (confirm(`Are you sure you want to cancel this order? This action cannot be undone.`)) {
+      this.cancelOrder(order);
+    }
+  }
+  
+  cancelOrder(order: Order): void {
+    this.isCancelling = order._id;
+    this.clearMessages();
+    
+    this.orderService.cancelOrder(order._id).subscribe({
+      next: (updatedOrder) => {
+        // Update the order in the orders array
+        const index = this.orders.findIndex(o => o._id === updatedOrder._id);
+        if (index !== -1) {
+          this.orders[index] = updatedOrder;
+        }
+        
+        this.successMessage = 'Order cancelled successfully';
+        this.isCancelling = '';
+        
+        // Auto-dismiss success message
+        this.autoDismissSuccessMessage();
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to cancel order';
+        this.isCancelling = '';
+        console.error('Error cancelling order:', err);
+      }
+    });
+  }
 
   changeTab(tab: string): void {
     this.activeTab = tab;
@@ -126,6 +166,9 @@ export class ProfileComponent implements OnInit {
         this.successMessage = 'Profile updated successfully!';
         this.editMode = false;
         this.isLoading = false;
+        
+        // Auto-dismiss success message
+        this.autoDismissSuccessMessage();
       },
       error: (err) => {
         this.error = err.error?.message || 'Failed to update profile';
@@ -133,6 +176,13 @@ export class ProfileComponent implements OnInit {
         console.error(err);
       }
     });
+  }
+  
+  // Helper method to auto-dismiss success messages
+  private autoDismissSuccessMessage(timeout: number = 3000): void {
+    setTimeout(() => {
+      this.successMessage = '';
+    }, timeout);
   }
   
   togglePasswordForm(): void {
@@ -175,6 +225,9 @@ export class ProfileComponent implements OnInit {
           newPassword: '',
           confirmPassword: ''
         };
+        
+        // Auto-dismiss success message
+        this.autoDismissSuccessMessage();
       },
       error: (err) => {
         this.passwordError = err.error?.message || 'Failed to change password';

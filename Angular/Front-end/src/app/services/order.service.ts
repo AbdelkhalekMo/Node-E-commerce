@@ -56,6 +56,10 @@ export class OrderService {
       );
   }
   
+  cancelOrder(id: string): Observable<Order> {
+    return this.updateOrderStatus(id, 'cancelled');
+  }
+  
   private handleError(error: HttpErrorResponse) {
     console.error('Order service error:', error);
     

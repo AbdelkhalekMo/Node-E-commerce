@@ -30,6 +30,19 @@
 
   <!-- User profile content -->
   <div class="row" *ngIf="!isLoading && !error && user">
+    <!-- Toast notification -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+      <div *ngIf="successMessage" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+          <strong class="me-auto">Success</strong>
+          <button type="button" class="btn-close btn-close-white" (click)="clearMessages()" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          {{ successMessage }}
+        </div>
+      </div>
+    </div>
+    
     <!-- Profile sidebar -->
     <div class="col-md-3 mb-4">
       <div class="card shadow-sm border-0">
@@ -219,7 +232,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let order of orders">
+                  <tr *ngFor="let order of orders" [class.cancelling]="isCancelling === order._id">
                     <td>{{ order._id }}</td>
                     <td>{{ order.createdAt | date:'short' }}</td>
                     <td>{{ getOrderItemsCount(order) }}</td>
@@ -238,7 +251,16 @@
                       </span>
                     </td>
                     <td>
-                      <a [routerLink]="['/checkout/success']" [queryParams]="{orderId: order._id}" class="btn btn-sm btn-outline-primary">View</a>
+                      <div class="btn-group">
+                        <a [routerLink]="['/checkout/success']" [queryParams]="{orderId: order._id}" class="btn btn-sm btn-outline-primary">View</a>
+                        <button *ngIf="canCancelOrder(order)" 
+                                class="btn btn-sm btn-outline-danger ms-1" 
+                                (click)="confirmCancelOrder(order)"
+                                [disabled]="isCancelling === order._id">
+                          <span *ngIf="isCancelling === order._id" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                          Cancel
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>

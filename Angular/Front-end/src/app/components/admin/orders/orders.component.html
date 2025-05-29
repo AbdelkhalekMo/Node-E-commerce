@@ -146,12 +146,12 @@
                       {{ getOrderStatus(order) | titlecase }}
                     </span>
                   </td>
-                  <td>
+                  <td class="align-middle">
                     <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderActions{{ order._id }}" data-bs-toggle="dropdown" aria-expanded="false">
                         Actions
                       </button>
-                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                      <ul class="dropdown-menu">
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'pending')">Mark as Pending</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'processing')">Mark as Processing</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'shipped')">Mark as Shipped</button></li>
