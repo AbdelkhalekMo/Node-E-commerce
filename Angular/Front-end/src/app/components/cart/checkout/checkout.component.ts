@@ -177,11 +177,12 @@ export class CheckoutComponent implements OnInit {
         totalAmount: this.discountedTotal, // Use discounted total if coupon applied
         shippingAddress: {
           fullName: this.shippingData.fullName,
-          address: this.shippingData.address,
+          street: this.shippingData.address,
           city: this.shippingData.city,
           state: this.shippingData.state,
-          postalCode: this.shippingData.zipCode,
-          country: this.shippingData.country
+          zipCode: this.shippingData.zipCode,
+          country: this.shippingData.country,
+          phone: this.shippingData.phone
         },
         paymentMethod: 'credit_card',
         status: 'processing',

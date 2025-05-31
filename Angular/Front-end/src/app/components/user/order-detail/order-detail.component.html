@@ -1,0 +1,140 @@
+<div class="container mt-4">
+  <!-- Loading spinner -->
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="row" *ngIf="error">
+    <div class="col-12">
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+        <div class="mt-3">
+          <button class="btn btn-outline-secondary" (click)="goBack()">Back to Orders</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order details content -->
+  <div class="row" *ngIf="!isLoading && !error && order">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Order Details</h1>
+        <button class="btn btn-outline-secondary" (click)="goBack()">
+          <i class="bi bi-arrow-left me-1"></i> Back to Orders
+        </button>
+      </div>
+
+      <!-- Order summary card -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-light">
+          <h5 class="mb-0">Order #{{ order._id }}</h5>
+          <span class="badge" 
+            [ngClass]="{
+              'bg-primary': getOrderStatus(order) === 'pending',
+              'bg-warning': getOrderStatus(order) === 'processing',
+              'bg-info': getOrderStatus(order) === 'shipped',
+              'bg-success': getOrderStatus(order) === 'delivered',
+              'bg-danger': getOrderStatus(order) === 'cancelled'
+            }">
+            {{ getOrderStatus(order) | titlecase }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="mb-2">Order Information</h6>
+              <p class="mb-1"><strong>Date:</strong> {{ order.createdAt | date:'medium' }}</p>
+              <p class="mb-1"><strong>Status:</strong> {{ getOrderStatus(order) | titlecase }}</p>
+              <p class="mb-1"><strong>Payment Method:</strong> {{ order.paymentMethod || 'Credit Card' }}</p>
+              <p class="mb-3"><strong>Payment Status:</strong> {{ order.paymentStatus | titlecase }}</p>
+              
+              <div *ngIf="canCancelOrder(order)" class="mb-3">
+                <button 
+                  class="btn btn-danger" 
+                  [disabled]="isCancelling"
+                  (click)="confirmCancelOrder()">
+                  <span *ngIf="isCancelling" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                  Cancel Order
+                </button>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <h6 class="mb-2">Shipping Information</h6>
+              <p class="mb-1" *ngIf="order.shippingAddress">
+                <strong>Address:</strong> {{ order.shippingAddress.street }}, 
+                {{ order.shippingAddress.city }}, 
+                {{ order.shippingAddress.state }} 
+                {{ order.shippingAddress.zipCode }}, 
+                {{ order.shippingAddress.country }}
+              </p>
+              <p class="mb-1"><strong>Shipping Method:</strong> {{ order.shippingMethod || 'Standard' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order items card -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Order Items</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of order.products">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <img 
+                        *ngIf="isProductObject(item.product) && item.product.image"
+                        [src]="isProductObject(item.product) ? item.product.image : ''"
+                        [alt]="isProductObject(item.product) ? item.product.name : 'Product'"
+                        class="img-thumbnail me-2" 
+                        style="width: 50px; height: 50px; object-fit: cover;">
+                      <div>
+                        <h6 class="mb-0">{{ isProductObject(item.product) ? item.product.name : 'Product' }}</h6>
+                        <small class="text-muted">SKU: {{ isProductObject(item.product) ? item.product._id : (item.product || 'N/A') }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>${{ item.price.toFixed(2) }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td class="text-end">${{ (item.price * item.quantity).toFixed(2) }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                  <td class="text-end">${{ order.totalAmount.toFixed(2) }}</td>
+                </tr>
+                <tr>
+                  <td colspan="3" class="text-end"><strong>Shipping:</strong></td>
+                  <td class="text-end">$0.00</td>
+                </tr>
+                <tr>
+                  <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                  <td class="text-end"><strong>${{ order.totalAmount.toFixed(2) }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

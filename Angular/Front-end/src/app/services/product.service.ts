@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable, catchError, throwError, tap, of, retry } from 'rxjs';
+import { Observable, catchError, throwError, tap, of, retry, delay } from 'rxjs';
 import { Product } from '../models/product';
 import { environment } from '../../environments/environment';
 
@@ -60,7 +60,7 @@ export class ProductService {
       } else if (error.status === 404) {
         console.error('Resource not found: The requested endpoint does not exist');
       } else if (error.status === 0) {
-        console.error('Network error: Please check your internet connection');
+        console.error('Network error: Please check your internet connection and make sure the backend server is running');
       }
     } else {
       errorMessage = 'Unexpected error occurred';
@@ -72,12 +72,21 @@ export class ProductService {
     return throwError(() => error);
   }
 
-  getAllProducts(): Observable<PaginatedResponse<Product> | Product[]> {
+  getAllProducts(page?: number, limit?: number): Observable<PaginatedResponse<Product> | Product[]> {
     console.log('Fetching all products from:', this.baseUrl);
-    // Add limit=0 to get all products without pagination
-    return this.http.get<PaginatedResponse<Product> | Product[]>(`${this.baseUrl}?limit=0`, this.getHttpOptions())
+    // Add pagination parameters if provided
+    let url = this.baseUrl;
+    if (page && limit) {
+      url += `?page=${page}&limit=${limit}`;
+    } else {
+      url += '?limit=8'; // Default to 8 items if no pagination specified
+    }
+    
+    console.log('Request URL:', url);
+    
+    return this.http.get<PaginatedResponse<Product> | Product[]>(url, this.getHttpOptions())
       .pipe(
-        retry(3), // Increase retry attempts
+        retry(3), // Retry 3 times
         tap(response => {
           console.log('Products API response:', response);
           if (isPaginatedResponse<Product>(response)) {
@@ -106,10 +115,18 @@ export class ProductService {
       );
   }
 
-  getProductsByCategory(category: string): Observable<PaginatedResponse<Product> | Product[]> {
-    console.log(`Fetching products for category ${category} from: ${this.baseUrl}/category/${category}`);
-    // Add limit=0 to get all products without pagination
-    return this.http.get<PaginatedResponse<Product> | Product[]>(`${this.baseUrl}/category/${category}?limit=0`, this.getHttpOptions())
+  getProductsByCategory(category: string, page?: number, limit?: number): Observable<PaginatedResponse<Product> | Product[]> {
+    // Add pagination parameters if provided
+    let url = `${this.baseUrl}/category/${category}`;
+    if (page && limit) {
+      url += `?page=${page}&limit=${limit}`;
+    } else {
+      url += '?limit=8'; // Default to 8 items if no pagination specified
+    }
+    
+    console.log(`Fetching products for category ${category} from: ${url}`);
+    
+    return this.http.get<PaginatedResponse<Product> | Product[]>(url, this.getHttpOptions())
       .pipe(
         retry(1),
         tap(response => {
@@ -127,27 +144,95 @@ export class ProductService {
   }
 
   getFeaturedProducts(): Observable<PaginatedResponse<Product> | Product[]> {
-    console.log(`Fetching featured products from: ${this.baseUrl}/featured`);
-    // Add limit=0 to get all products without pagination
-    return this.http.get<PaginatedResponse<Product> | Product[]>(`${this.baseUrl}/featured?limit=0`, this.getHttpOptions())
+    // Use the correct featured products endpoint
+    const url = `${this.baseUrl}/featured?limit=8`;
+    console.log(`Fetching featured products from: ${url}`);
+    
+    return this.http.get<PaginatedResponse<Product> | Product[]>(url, this.getHttpOptions())
       .pipe(
-        retry(3), // Increase retry attempts to 3
-        tap(response => {
-          console.log('Featured products API response:', response);
-          if (isPaginatedResponse<Product>(response)) {
-            console.log(`Received ${response.docs.length} featured products in paginated format`);
-          } else if (Array.isArray(response)) {
-            console.log(`Received ${response.length} featured products as array`);
-          } else {
-            console.log('Unexpected response format for featured products:', response);
+        retry({ count: 3, delay: 1000 }), // Retry 3 times with 1 second delay between retries
+        tap({
+          next: (response) => {
+            console.log('Featured products API response:', response);
+            if (isPaginatedResponse<Product>(response)) {
+              console.log(`Received ${response.docs.length} featured products in paginated format`);
+            } else if (Array.isArray(response)) {
+              console.log(`Received ${response.length} featured products as array`);
+            } else {
+              console.log('Unexpected response format for featured products:', response);
+            }
+          },
+          error: (error) => {
+            console.error('Error in tap for featured products:', error);
           }
         }),
-        catchError(error => {
-          console.error('Error fetching featured products:', error);
-          // Return empty array on error rather than propagating the error
-          return of([]);
+        catchError((error: HttpErrorResponse) => {
+          console.error(`Error fetching featured products from ${url}:`, error);
+          console.error('Status:', error.status, 'StatusText:', error.statusText);
+          console.error('Error message:', error.message);
+          
+          if (error.status === 0) {
+            console.error('Connection error: Please check if the backend server is running at http://localhost:5001');
+          }
+          
+          // Return mock data when server is unavailable
+          return of(this.getMockProducts());
         })
       );
+  }
+  
+  // Mock data for when the server is not available
+  private getMockProducts(): Product[] {
+    return [
+      {
+        _id: '1',
+        name: 'Smartphone XYZ',
+        title: 'Smartphone XYZ',
+        description: 'Latest smartphone with advanced features',
+        price: 699.99,
+        category: 'electronics',
+        image: 'https://via.placeholder.com/300',
+        stock: 15,
+        averageRating: 4.5,
+        isFeatured: true
+      },
+      {
+        _id: '2',
+        name: 'Laptop Pro',
+        title: 'Laptop Pro',
+        description: 'High-performance laptop for professionals',
+        price: 1299.99,
+        category: 'electronics',
+        image: 'https://via.placeholder.com/300',
+        stock: 8,
+        averageRating: 4.8,
+        isFeatured: true
+      },
+      {
+        _id: '3',
+        name: 'Casual T-shirt',
+        title: 'Casual T-shirt',
+        description: 'Comfortable cotton t-shirt for everyday wear',
+        price: 24.99,
+        category: 'clothing',
+        image: 'https://via.placeholder.com/300',
+        stock: 50,
+        averageRating: 4.2,
+        isFeatured: true
+      },
+      {
+        _id: '4',
+        name: 'Coffee Maker',
+        title: 'Coffee Maker',
+        description: 'Automatic coffee maker with timer',
+        price: 89.99,
+        category: 'home',
+        image: 'https://via.placeholder.com/300',
+        stock: 12,
+        averageRating: 4.6,
+        isFeatured: true
+      }
+    ];
   }
 
   createProduct(product: Product): Observable<Product> {

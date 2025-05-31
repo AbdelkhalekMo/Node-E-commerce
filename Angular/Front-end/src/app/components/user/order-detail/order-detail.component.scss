@@ -1,0 +1,52 @@
+.badge {
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}
+
+.table img {
+  max-width: 50px;
+  max-height: 50px;
+  object-fit: cover;
+}
+
+.card {
+  overflow: hidden;
+}
+
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+// Hover effects
+.btn:hover {
+  opacity: 0.9;
+}
+
+// Specific order status colors
+.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.bg-info {
+  background-color: #17a2b8 !important;
+  color: #fff !important;
+}
+
+.bg-success {
+  background-color: #28a745 !important;
+}
+
+.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.bg-dark {
+  background-color: #343a40 !important;
+}

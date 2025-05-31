@@ -5,7 +5,8 @@ import {
   getUserOrders,
   getAllOrders,
   updateOrderStatus,
-  deleteOrder
+  deleteOrder,
+  cancelUserOrder
 } from "../controllers/order.controller.js";
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/", protectRoute, createOrder);
 router.get("/user", protectRoute, getUserOrders);
 router.get("/:id", protectRoute, getOrderById);
+router.patch("/:id/cancel", protectRoute, cancelUserOrder);
 
 // Admin routes
 router.get("/", protectRoute, adminRoute, getAllOrders);

@@ -251,15 +251,31 @@
                       </span>
                     </td>
                     <td>
-                      <div class="btn-group">
-                        <a [routerLink]="['/checkout/success']" [queryParams]="{orderId: order._id}" class="btn btn-sm btn-outline-primary">View</a>
-                        <button *ngIf="canCancelOrder(order)" 
-                                class="btn btn-sm btn-outline-danger ms-1" 
-                                (click)="confirmCancelOrder(order)"
-                                [disabled]="isCancelling === order._id">
-                          <span *ngIf="isCancelling === order._id" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                          Cancel
+                      <div *ngIf="isCancelling === order._id" class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm text-danger me-2" role="status">
+                          <span class="visually-hidden">Cancelling...</span>
+                        </div>
+                        <span class="small">Cancelling...</span>
+                      </div>
+                      
+                      <div *ngIf="isCancelling !== order._id">
+                        <button 
+                          *ngIf="canCancelOrder(order)"
+                          class="btn btn-sm btn-outline-danger" 
+                          (click)="confirmCancelOrder(order)">
+                          Cancel Order
                         </button>
+                        
+                        <span *ngIf="!canCancelOrder(order) && getOrderStatus(order) !== 'cancelled'" class="text-muted small d-block mb-1">
+                          Cannot cancel this order
+                        </span>
+                        
+                        <a 
+                          *ngIf="getOrderStatus(order) !== 'cancelled'"
+                          [routerLink]="['/orders', order._id]" 
+                          class="btn btn-sm btn-outline-primary ms-1">
+                          View Details
+                        </a>
                       </div>
                     </td>
                   </tr>

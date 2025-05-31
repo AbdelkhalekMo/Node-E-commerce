@@ -8,11 +8,11 @@ export interface OrderItem {
 }
 
 export interface ShippingAddress {
-  fullName: string;
-  address: string;
+  fullName?: string;
+  street: string;
   city: string;
   state: string;
-  postalCode: string;
+  zipCode: string;
   country: string;
   phone?: string;
 }

@@ -28,6 +28,12 @@ export class ProductListComponent implements OnInit {
   error = '';
   category: string | null = null;
   
+  // Pagination
+  currentPage = 1;
+  pageSize = 12;
+  totalProducts = 0;
+  totalPages = 1;
+  
   // Filter properties
   searchTerm = '';
   sortOption = 'default';
@@ -51,29 +57,55 @@ export class ProductListComponent implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       this.category = params.get('category');
+      // Reset pagination when category changes
+      this.currentPage = 1;
       this.loadProducts();
+    });
+    
+    // Also check for query params (page, etc.)
+    this.route.queryParams.subscribe(params => {
+      if (params['page']) {
+        this.currentPage = parseInt(params['page']) || 1;
+      }
+      // Don't reload if we're just initializing
+      if (!this.isLoading) {
+        this.loadProducts();
+      }
     });
   }
   
   loadProducts(): void {
     this.isLoading = true;
     this.error = '';
-    this.searchTerm = ''; // Reset search term when loading products
+    
+    // Keep search term between loads if explicitly requested
+    if (!this.route.snapshot.queryParams['keepSearch']) {
+      this.searchTerm = ''; // Reset search term when loading products
+    }
+    
+    console.log(`Loading products for category: ${this.category || 'all'}, page: ${this.currentPage}`);
     
     const loadMethod = this.category
-      ? this.productService.getProductsByCategory(this.category)
-      : this.productService.getAllProducts();
+      ? this.productService.getProductsByCategory(this.category, this.currentPage, this.pageSize)
+      : this.productService.getAllProducts(this.currentPage, this.pageSize);
       
     loadMethod.subscribe({
       next: (response) => {
+        console.log('Product response:', response);
+        
         // Handle paginated response - extract docs array
         if (isPaginatedResponse<Product>(response)) {
           // If response is a paginated object with docs property
           this.products = response.docs;
+          this.totalProducts = response.totalDocs;
+          this.totalPages = response.totalPages;
+          this.currentPage = response.page;
         } 
         // If response is already an array
         else if (Array.isArray(response)) {
           this.products = response;
+          this.totalProducts = response.length;
+          this.totalPages = 1;
         } 
         // Fallback to empty array if not recognized format
         else {
@@ -81,6 +113,13 @@ export class ProductListComponent implements OnInit {
           console.error('Unexpected response format:', response);
           this.error = 'Received invalid data format from server';
         }
+        
+        // Check if Samsung Galaxy S23 Ultra is in the response
+        const hasGalaxy = this.products.some(p => 
+          p.name?.includes('Galaxy S23 Ultra') || 
+          p.title?.includes('Galaxy S23 Ultra')
+        );
+        console.log('Samsung Galaxy S23 Ultra found in results:', hasGalaxy);
         
         // Normalize product data to ensure required fields exist
         this.normalizeProducts();
@@ -141,25 +180,30 @@ export class ProductListComponent implements OnInit {
   applyFilters(): void {
     let filtered = [...this.products];
     
+    // Log all products to see if Galaxy S23 Ultra is in original list
+    console.log('All products before filtering:', this.products.map(p => p.name || p.title));
+    
     // Apply search term filter
     if (this.searchTerm.trim()) {
       const search = this.searchTerm.toLowerCase();
       filtered = filtered.filter(product => {
-        const title = product.title || product.name || '';
-        const description = product.description || '';
+        const title = (product.title || product.name || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
         
-        return title.toLowerCase().includes(search) || 
-               description.toLowerCase().includes(search);
+        return title.includes(search) || description.includes(search);
       });
     }
     
     // Apply price filter
-    filtered = filtered.filter(product => 
-      product.price >= this.priceRange.min && 
-      product.price <= this.priceRange.max
-    );
+    filtered = filtered.filter(product => {
+      // Make sure price is a number
+      const price = typeof product.price === 'number' ? product.price : 0;
+      return price >= this.priceRange.min && price <= this.priceRange.max;
+    });
     
     this.displayedProducts = filtered;
+    console.log('Products after filtering:', this.displayedProducts.map(p => p.name || p.title));
+    
     this.sortProducts();
   }
   
@@ -184,6 +228,43 @@ export class ProductListComponent implements OnInit {
     else {
       this.applyFilters();
     }
+  }
+  
+  // Pagination methods
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
+      return;
+    }
+    
+    // Update URL with page number
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { 
+        page: page, 
+        keepSearch: this.searchTerm ? true : undefined 
+      },
+      queryParamsHandling: 'merge'
+    });
+  }
+  
+  // Get an array of page numbers to display
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPages = 5; // Show up to 5 page numbers
+    
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxPages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxPages - 1);
+    
+    // Adjust if we're near the end
+    if (endPage - startPage + 1 < maxPages && startPage > 1) {
+      startPage = Math.max(1, endPage - maxPages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   }
   
   sortProducts(): void {

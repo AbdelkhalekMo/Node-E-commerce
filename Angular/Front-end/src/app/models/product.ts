@@ -8,7 +8,7 @@ export interface Product {
   image?: string; // Some components use image, others use imageUrl
   category: string;
   quantity?: number; // Make quantity optional
-  stock?: number; // Added for backend compatibility
+  stock: number; // Required field to fix TypeScript errors
   isFeatured?: boolean; // Added for product-detail component
   averageRating?: number; // Add field from backend model
   ratings?: ProductRating[]; // Add field from backend model

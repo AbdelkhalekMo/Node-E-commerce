@@ -65,6 +65,11 @@ export const routes: Routes = [
     data: { activeTab: 'orders' }
   },
   { 
+    path: 'orders/:id', 
+    loadComponent: () => import('././components/user/order-detail/order-detail.component').then(m => m.OrderDetailComponent),
+    canActivate: [customerGuard]
+  },
+  { 
     path: 'admin', 
     children: [
       { 

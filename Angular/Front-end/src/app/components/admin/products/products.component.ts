@@ -77,6 +77,12 @@ export class AdminProductsComponent implements OnInit {
   successMessage = '';
   isAddingProduct = false;
 
+  // Pagination properties
+  currentPage = 1;
+  pageSize = 20;
+  totalProducts = 0;
+  totalPages = 1;
+  
   // Search and filter properties
   searchQuery = '';
   categoryFilter = 'all';
@@ -178,22 +184,30 @@ export class AdminProductsComponent implements OnInit {
     this.error = '';
     
     console.log('Loading products for admin...');
-    this.productService.getAllProducts().subscribe({
+    this.productService.getAllProducts(this.currentPage, this.pageSize).subscribe({
       next: (response) => {
         console.log('Raw product response:', response);
         
         // Handle paginated response
         if (isPaginatedResponse<Product>(response)) {
           console.log(`Received paginated response with ${response.docs.length} products out of ${response.totalDocs} total`);
+          this.products = response.docs;
           this.allProducts = response.docs;
+          this.totalProducts = response.totalDocs;
+          this.totalPages = response.totalPages || Math.ceil(response.totalDocs / this.pageSize);
+          this.currentPage = response.page || 1;
         } 
         // If response is already an array
         else if (Array.isArray(response)) {
           console.log(`Received array response with ${response.length} products`);
+          this.products = response;
           this.allProducts = response;
+          this.totalProducts = response.length;
+          this.totalPages = 1;
         } 
         // Fallback to empty array if not recognized format
         else {
+          this.products = [];
           this.allProducts = [];
           console.error('Unexpected response format:', response);
           this.error = 'Received invalid data format from server';
@@ -208,216 +222,241 @@ export class AdminProductsComponent implements OnInit {
         }
         
         // Normalize data to ensure consistent field usage
-        this.allProducts = this.allProducts.map(product => {
-          const normalizedProduct = { ...product };
-          
-          // Ensure name field is set
-          if (!normalizedProduct.name && normalizedProduct.title) {
-            normalizedProduct.name = normalizedProduct.title;
-          } else if (!normalizedProduct.name) {
-            normalizedProduct.name = 'Untitled Product';
-          }
-          
-          // Ensure title field is set
-          if (!normalizedProduct.title && normalizedProduct.name) {
-            normalizedProduct.title = normalizedProduct.name;
-          } else if (!normalizedProduct.title) {
-            normalizedProduct.title = normalizedProduct.name || 'Untitled Product';
-          }
-          
-          // Ensure image field is set
-          if (!normalizedProduct.image && normalizedProduct.imageUrl) {
-            normalizedProduct.image = normalizedProduct.imageUrl;
-          } else if (!normalizedProduct.imageUrl && normalizedProduct.image) {
-            normalizedProduct.imageUrl = normalizedProduct.image;
-          } else if (!normalizedProduct.image && !normalizedProduct.imageUrl) {
-            // Set default image if none exists
-            normalizedProduct.image = 'https://via.placeholder.com/300';
-            normalizedProduct.imageUrl = 'https://via.placeholder.com/300';
-          }
-          
-          // Ensure stock field is set
-          if (normalizedProduct.quantity !== undefined && normalizedProduct.stock === undefined) {
-            normalizedProduct.stock = normalizedProduct.quantity;
-          } else if (normalizedProduct.stock !== undefined && normalizedProduct.quantity === undefined) {
-            normalizedProduct.quantity = normalizedProduct.stock;
-          } else if (normalizedProduct.stock === undefined && normalizedProduct.quantity === undefined) {
-            normalizedProduct.stock = 0;
-            normalizedProduct.quantity = 0;
-          }
-          
-          // Ensure isFeatured is boolean
-          if (normalizedProduct.isFeatured === undefined) {
-            normalizedProduct.isFeatured = false;
-          }
-          
-          // Ensure category is lowercase for consistent filtering
-          if (normalizedProduct.category) {
-            normalizedProduct.category = normalizedProduct.category.toLowerCase();
-          } else {
-            normalizedProduct.category = 'other';
-          }
-          
-          return normalizedProduct;
-        });
+        this.normalizeProducts();
         
-        console.log('Products after normalization:', this.allProducts.length);
+        // Apply any filters
+        this.applyFilters();
         
-        this.products = [...this.allProducts];
-        this.filteredProducts = [...this.allProducts];
-        this.applyFilters(); // Apply any existing filters
+        // Reset loading state
         this.isLoading = false;
         
-        // Check for specific missing products
+        // Check for specific products for debugging
         setTimeout(() => this.checkForMissingProducts(), 500);
       },
       error: (err: HttpErrorResponse) => {
-        this.isLoading = false;
-        console.error('Error loading products:', err);
-        
-        // Handle specific HTTP error codes
-        if (err.status === 403) {
-          this.error = 'You do not have permission to view these products. Please log in as an administrator.';
-          // Optionally redirect to login page
-          // this.router.navigate(['/login']);
-        } else if (err.status === 401) {
-          this.error = 'Authentication required. Please log in to manage products.';
-          // Optionally redirect to login
-          // this.router.navigate(['/login']);
-        } else if (err.status === 0) {
-          this.error = 'Network error. Please check your internet connection and try again.';
-        } else {
-          this.error = `Failed to load products: ${err.message || 'Unknown error'}`;
-        }
+        this.handleError(err);
       }
     });
   }
-  
-  // Apply search and filters
-  applyFilters(): void {
-    console.log('Applying filters with:', {
-      searchQuery: this.searchQuery,
-      categoryFilter: this.categoryFilter,
-      priceFilter: this.priceFilter,
-      stockFilter: this.stockFilter,
-      featuredFilter: this.featuredFilter
-    });
-    
-    console.log('Starting with', this.allProducts.length, 'products');
-    
-    // Check if allProducts is empty
-    if (this.allProducts.length === 0) {
-      console.warn('No products to filter');
-      this.filteredProducts = [];
+
+  // Helper methods for pagination
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages || page === this.currentPage) {
       return;
     }
     
-    let result = [...this.allProducts];
+    this.currentPage = page;
+    this.loadProducts();
+  }
+  
+  changePageSize(): void {
+    this.currentPage = 1; // Reset to first page when changing page size
+    this.loadProducts();
+  }
+  
+  // Normalize product data
+  normalizeProducts(): void {
+    this.allProducts = this.allProducts.map(product => {
+      const normalizedProduct = { ...product };
+      
+      // Ensure name field is set
+      if (!normalizedProduct.name && normalizedProduct.title) {
+        normalizedProduct.name = normalizedProduct.title;
+      } else if (!normalizedProduct.name) {
+        normalizedProduct.name = 'Untitled Product';
+      }
+      
+      // Ensure title field is set
+      if (!normalizedProduct.title && normalizedProduct.name) {
+        normalizedProduct.title = normalizedProduct.name;
+      } else if (!normalizedProduct.title) {
+        normalizedProduct.title = normalizedProduct.name || 'Untitled Product';
+      }
+      
+      // Ensure image field is set
+      if (!normalizedProduct.image && normalizedProduct.imageUrl) {
+        normalizedProduct.image = normalizedProduct.imageUrl;
+      } else if (!normalizedProduct.imageUrl && normalizedProduct.image) {
+        normalizedProduct.imageUrl = normalizedProduct.image;
+      } else if (!normalizedProduct.image && !normalizedProduct.imageUrl) {
+        // Set default image if none exists
+        normalizedProduct.image = 'https://via.placeholder.com/300';
+        normalizedProduct.imageUrl = 'https://via.placeholder.com/300';
+      }
+      
+      // Ensure stock field is set and is a number
+      if (normalizedProduct.quantity !== undefined && normalizedProduct.stock === undefined) {
+        normalizedProduct.stock = Number(normalizedProduct.quantity) || 0;
+      } else if (normalizedProduct.stock !== undefined && normalizedProduct.quantity === undefined) {
+        normalizedProduct.quantity = Number(normalizedProduct.stock) || 0;
+      } else if (normalizedProduct.stock === undefined && normalizedProduct.quantity === undefined) {
+        normalizedProduct.stock = 0;
+        normalizedProduct.quantity = 0;
+      } else {
+        // Ensure stock is a number
+        normalizedProduct.stock = Number(normalizedProduct.stock) || 0;
+        normalizedProduct.quantity = Number(normalizedProduct.quantity) || 0;
+      }
+      
+      // Ensure price is a number
+      normalizedProduct.price = Number(normalizedProduct.price) || 0;
+      
+      // Ensure isFeatured is boolean
+      if (normalizedProduct.isFeatured === undefined) {
+        normalizedProduct.isFeatured = false;
+      }
+      
+      return normalizedProduct;
+    });
+  }
+
+  // Handle errors consistently
+  handleError(err: HttpErrorResponse): void {
+    this.isLoading = false;
+    console.error('Error loading products:', err);
+    
+    if (err.status === 401) {
+      this.error = 'Authentication required. Please log in again.';
+      // Redirect to login
+      this.router.navigate(['/auth/login']);
+    } else if (err.status === 403) {
+      this.error = 'You do not have permission to access product management.';
+    } else if (err.status === 0) {
+      this.error = 'Cannot connect to the server. Please check if the backend is running.';
+    } else {
+      this.error = `Failed to load products: ${err.status} ${err.statusText}`;
+    }
+  }
+
+  // Apply search and filters
+  applyFilters(): void {
+    console.log('Applying filters with criteria:', {
+      search: this.searchQuery,
+      category: this.categoryFilter,
+      price: this.priceFilter,
+      stock: this.stockFilter,
+      featured: this.featuredFilter
+    });
+    
+    // Store the original count for debugging
+    const originalCount = this.allProducts.length;
+    
+    // Start with all products
+    this.filteredProducts = [...this.allProducts];
+    console.log(`Starting with ${this.filteredProducts.length} products`);
+    
+    // Apply search query
+    if (this.searchQuery.trim() !== '') {
+      const search = this.searchQuery.toLowerCase().trim();
+      const beforeCount = this.filteredProducts.length;
+      
+      this.filteredProducts = this.filteredProducts.filter(product => {
+        const nameMatch = product.name?.toLowerCase().includes(search);
+        const titleMatch = product.title?.toLowerCase().includes(search);
+        const descMatch = product.description?.toLowerCase().includes(search);
+        
+        return nameMatch || titleMatch || descMatch;
+      });
+      
+      console.log(`After search filter: ${this.filteredProducts.length} products (removed ${beforeCount - this.filteredProducts.length})`);
+    }
     
     // Apply category filter
     if (this.categoryFilter !== 'all') {
-      result = result.filter(product => {
-        // Handle case insensitivity and missing category
+      const beforeCount = this.filteredProducts.length;
+      
+      this.filteredProducts = this.filteredProducts.filter(product => {
+        // Make sure to handle case insensitivity
         const productCategory = (product.category || '').toLowerCase();
-        return productCategory === this.categoryFilter.toLowerCase();
+        const filterCategory = this.categoryFilter.toLowerCase();
+        
+        // Debug any product that would be filtered out
+        if (productCategory !== filterCategory) {
+          console.log(`Product category mismatch - Product: "${product.name}", Category: "${productCategory}", Filter: "${filterCategory}"`);
+        }
+        
+        return productCategory === filterCategory;
       });
-      console.log(`After category filter (${this.categoryFilter}):`, result.length, 'products');
+      
+      console.log(`After category filter: ${this.filteredProducts.length} products (removed ${beforeCount - this.filteredProducts.length})`);
     }
     
     // Apply price filter
     if (this.priceFilter !== 'all') {
-      result = result.filter(product => {
-        // Handle missing price
+      const beforeCount = this.filteredProducts.length;
+      
+      this.filteredProducts = this.filteredProducts.filter(product => {
         const price = product.price || 0;
-        let matches = false;
+        
         switch (this.priceFilter) {
           case 'under25':
-            matches = price < 25;
-            break;
+            return price < 25;
           case '25to50':
-            matches = price >= 25 && price <= 50;
-            break;
+            return price >= 25 && price <= 50;
           case '50to100':
-            matches = price > 50 && price <= 100;
-            break;
+            return price > 50 && price <= 100;
           case 'over100':
-            matches = price > 100;
-            break;
+            return price > 100;
           default:
-            matches = true;
+            return true;
         }
-        return matches;
       });
-      console.log(`After price filter (${this.priceFilter}):`, result.length, 'products');
+      
+      console.log(`After price filter: ${this.filteredProducts.length} products (removed ${beforeCount - this.filteredProducts.length})`);
     }
     
     // Apply stock filter
     if (this.stockFilter !== 'all') {
-      result = result.filter(product => {
-        // Use stock or quantity or default to 0
-        const stock = product.stock ?? product.quantity ?? 0;
-        let matches = false;
+      const beforeCount = this.filteredProducts.length;
+      
+      this.filteredProducts = this.filteredProducts.filter(product => {
+        const stock = product.stock !== undefined ? product.stock : (product.quantity || 0);
+        
         switch (this.stockFilter) {
           case 'instock':
-            matches = stock > 0;
-            break;
+            return stock > 0;
           case 'lowstock':
-            matches = stock > 0 && stock <= 10;
-            break;
+            return stock > 0 && stock <= 10;
           case 'outofstock':
-            matches = stock <= 0;
-            break;
+            return stock <= 0;
           default:
-            matches = true;
+            return true;
         }
-        return matches;
       });
-      console.log(`After stock filter (${this.stockFilter}):`, result.length, 'products');
+      
+      console.log(`After stock filter: ${this.filteredProducts.length} products (removed ${beforeCount - this.filteredProducts.length})`);
     }
     
     // Apply featured filter
     if (this.featuredFilter !== 'all') {
-      result = result.filter(product => {
-        // Handle undefined isFeatured (treat as false)
-        const isFeatured = product.isFeatured ?? false;
-        let matches = false;
-        switch (this.featuredFilter) {
-          case 'featured':
-            matches = isFeatured === true;
-            break;
-          case 'nonfeatured':
-            matches = isFeatured === false;
-            break;
-          default:
-            matches = true;
-        }
-        return matches;
-      });
-      console.log(`After featured filter (${this.featuredFilter}):`, result.length, 'products');
-    }
-    
-    // Apply search filter if there's a query
-    if (this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase().trim();
-      result = result.filter(product => {
-        // Handle potentially undefined fields
-        const name = (product.name || '').toLowerCase();
-        const title = (product.title || '').toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        const category = (product.category || '').toLowerCase();
+      const beforeCount = this.filteredProducts.length;
+      
+      this.filteredProducts = this.filteredProducts.filter(product => {
+        // Only check for isFeatured property, as 'featured' doesn't exist on Product type
+        const isFeatured = product.isFeatured === true;
         
-        const matches = name.includes(query) || 
-               title.includes(query) || 
-               description.includes(query) || 
-               category.includes(query);
-               
-        return matches;
+        if (this.featuredFilter === 'featured') {
+          return isFeatured;
+        } else if (this.featuredFilter === 'nonfeatured') {
+          return !isFeatured;
+        }
+        
+        return true;
       });
-      console.log(`After search query (${this.searchQuery}):`, result.length, 'products');
+      
+      console.log(`After featured filter: ${this.filteredProducts.length} products (removed ${beforeCount - this.filteredProducts.length})`);
     }
     
-    this.filteredProducts = result;
-    console.log('Final filtered products:', this.filteredProducts.length);
+    // Update products list
+    this.products = [...this.filteredProducts];
+    
+    // Log final filtering results
+    console.log(`Filtering complete: ${originalCount} → ${this.filteredProducts.length} products`);
+    
+    // Warn if all products were filtered out
+    if (this.filteredProducts.length === 0 && originalCount > 0) {
+      console.warn('All products were filtered out! Current filters may be too restrictive.');
+    }
   }
   
   // Reset all filters

@@ -140,4 +140,40 @@ export const deleteOrder = async (req, res) => {
     console.log("Error in deleteOrder controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
+};
+
+export const cancelUserOrder = async (req, res) => {
+  try {
+    // Find the order by ID
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    // Check if the order belongs to the current user
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to cancel this order" });
+    }
+    
+    // Check if the order is in a cancellable state
+    if (order.status !== "pending" && order.status !== "processing") {
+      return res.status(400).json({ 
+        message: "Cannot cancel this order. Only orders with 'pending' or 'processing' status can be cancelled."
+      });
+    }
+    
+    // Update the order status to cancelled
+    order.status = "cancelled";
+    await order.save();
+    
+    // Return the updated order
+    const updatedOrder = await Order.findById(req.params.id)
+      .populate("products.product");
+    
+    res.json(updatedOrder);
+  } catch (error) {
+    console.log("Error in cancelUserOrder controller", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 }; 

@@ -174,7 +174,12 @@ export class AdminOrdersComponent implements OnInit {
     this.isLoading = true;
     this.error = '';
     
-    this.orderService.updateOrderStatus(orderId, status).pipe(
+    // Use admin-specific cancellation method if cancelling
+    const updateObservable = status === 'cancelled' 
+      ? this.orderService.adminCancelOrder(orderId)
+      : this.orderService.updateOrderStatus(orderId, status);
+      
+    updateObservable.pipe(
       catchError(error => {
         console.error('Error updating order status:', error);
         this.error = `Failed to update order status: ${error.message || 'Unknown error'}`;
@@ -199,9 +204,6 @@ export class AdminOrdersComponent implements OnInit {
             // If we can't find the order, reload all orders
             this.loadOrders();
           }
-        } else {
-          console.warn('No response from updateOrderStatus');
-          this.loadOrders();
         }
       }
     });

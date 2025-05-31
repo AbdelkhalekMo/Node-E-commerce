@@ -118,7 +118,10 @@ export class ProfileComponent implements OnInit {
     this.isCancelling = order._id;
     this.clearMessages();
     
-    this.orderService.cancelOrder(order._id).subscribe({
+    const status = this.getOrderStatus(order);
+    
+    // Use user-specific cancellation method
+    this.orderService.userCancelOrder(order._id, status).subscribe({
       next: (updatedOrder) => {
         // Update the order in the orders array
         const index = this.orders.findIndex(o => o._id === updatedOrder._id);
@@ -133,7 +136,7 @@ export class ProfileComponent implements OnInit {
         this.autoDismissSuccessMessage();
       },
       error: (err) => {
-        this.error = err.error?.message || 'Failed to cancel order';
+        this.error = err.message || err.error?.message || 'Failed to cancel order';
         this.isCancelling = '';
         console.error('Error cancelling order:', err);
       }
