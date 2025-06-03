@@ -3,9 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { OrderService } from '../../../services/order.service';
-import { Order } from '../../../models/order';
+import { Order, OrderItem } from '../../../models/order';
 import { User } from '../../../models/user';
 import { catchError, finalize, of } from 'rxjs';
+import { Product } from '../../../models/product';
+
+// Import Bootstrap modal functionality
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-admin-orders',
@@ -64,6 +68,30 @@ import { catchError, finalize, of } from 'rxjs';
     .btn-sm:hover {
       transform: translateY(-2px);
     }
+
+    /* Modal styles */
+    .modal-body h6 {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal-body hr {
+      margin: 1rem 0;
+    }
+    
+    /* Clickable order rows */
+    .order-row {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .order-row:hover {
+      background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.1) !important;
+    }
+    
+    .order-row:active {
+      background-color: rgba(var(--primary-color-rgb, 63, 81, 181), 0.15) !important;
+    }
   `]
 })
 export class AdminOrdersComponent implements OnInit {
@@ -74,6 +102,11 @@ export class AdminOrdersComponent implements OnInit {
   allOrders: Order[] = []; // Store all orders for filtering
   isLoading = true;
   error = '';
+  
+  // Selected order for the modal
+  selectedOrder: Order | null = null;
+  orderDetailsModal: any; // Reference to the Bootstrap modal
+  isUpdatingStatus = false; // Loading state for status updates
   
   // Search and filter properties
   searchQuery = '';
@@ -198,6 +231,12 @@ export class AdminOrdersComponent implements OnInit {
             // Create a copy of the order with the updated status
             const updatedOrder = {...this.allOrders[index], status: status};
             this.allOrders[index] = updatedOrder;
+            
+            // If this is the currently selected order, update it too
+            if (this.selectedOrder && this.selectedOrder._id === orderId) {
+              this.selectedOrder = updatedOrder;
+            }
+            
             // Reapply filters to update the filtered list
             this.applyFilters();
           } else {
@@ -207,6 +246,109 @@ export class AdminOrdersComponent implements OnInit {
         }
       }
     });
+  }
+  
+  // View order details in modal
+  viewOrderDetails(order: Order): void {
+    this.selectedOrder = order; // Set initially to show loading state
+    
+    // Initialize the modal if it doesn't exist
+    if (!this.orderDetailsModal) {
+      const modalElement = document.getElementById('orderDetailsModal');
+      if (modalElement) {
+        this.orderDetailsModal = new bootstrap.Modal(modalElement);
+      }
+    }
+    
+    // Show the modal
+    if (this.orderDetailsModal) {
+      this.orderDetailsModal.show();
+    }
+    
+    // Fetch detailed order information
+    this.orderService.getOrderDetails(order._id).pipe(
+      catchError(error => {
+        console.error('Error fetching order details:', error);
+        // Keep the basic order data if detailed fetch fails
+        return of(order);
+      })
+    ).subscribe({
+      next: (detailedOrder) => {
+        this.selectedOrder = detailedOrder;
+      }
+    });
+  }
+  
+  // Update the status of the currently selected order
+  updateSelectedOrderStatus(status: string): void {
+    if (this.selectedOrder) {
+      this.isUpdatingStatus = true;
+      
+      // Use admin-specific cancellation method if cancelling
+      const updateObservable = status === 'cancelled' 
+        ? this.orderService.adminCancelOrder(this.selectedOrder._id)
+        : this.orderService.updateOrderStatus(this.selectedOrder._id, status);
+        
+      updateObservable.pipe(
+        catchError(error => {
+          console.error('Error updating order status:', error);
+          this.error = `Failed to update order status: ${error.message || 'Unknown error'}`;
+          return of(null);
+        }),
+        finalize(() => {
+          this.isUpdatingStatus = false;
+        })
+      ).subscribe({
+        next: (response) => {
+          if (response) {
+            console.log('Order status updated successfully:', response);
+            
+            // Update the order in the local arrays
+            const allOrdersIndex = this.allOrders.findIndex(o => o._id === this.selectedOrder?._id);
+            if (allOrdersIndex !== -1) {
+              // Create a copy of the order with the updated status
+              const updatedOrder = {...this.allOrders[allOrdersIndex], status: status};
+              this.allOrders[allOrdersIndex] = updatedOrder;
+              
+              // Update the selected order
+              this.selectedOrder = updatedOrder;
+              
+              // Reapply filters to update the filtered list
+              this.applyFilters();
+            }
+          }
+        }
+      });
+    }
+  }
+  
+  // Get order items (handle both 'items' and 'products' properties)
+  getOrderItems(order: Order): OrderItem[] {
+    if (!order) return [];
+    
+    // @ts-ignore - handle both structures
+    return order.products || order.items || [];
+  }
+  
+  // Get product name from product object or ID
+  getProductName(product: Product | string): string {
+    if (!product) return 'Unknown Product';
+    
+    if (typeof product === 'string') {
+      return `Product ID: ${product}`;
+    }
+    
+    return product.name || 'Unknown Product';
+  }
+  
+  // Calculate subtotal for an order
+  calculateSubtotal(order: Order): number {
+    if (!order) return 0;
+    
+    const items = this.getOrderItems(order);
+    return items.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
   }
 
   getUserEmail(user: User | string): string {

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable, catchError, throwError, of, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Order } from '../models/order';
 
@@ -33,6 +33,27 @@ export class OrderService {
     return this.http.get<Order>(`${this.baseUrl}/${id}`, this.getHttpOptions())
       .pipe(
         catchError(this.handleError)
+      );
+  }
+
+  // Get detailed order with populated product information
+  getOrderDetails(id: string): Observable<Order> {
+    return this.http.get<Order>(`${this.baseUrl}/${id}`, this.getHttpOptions())
+      .pipe(
+        map(order => {
+          // Ensure dates are properly parsed
+          if (order.createdAt) {
+            order.createdAt = new Date(order.createdAt);
+          }
+          if (order.updatedAt) {
+            order.updatedAt = new Date(order.updatedAt);
+          }
+          return order;
+        }),
+        catchError(error => {
+          console.error(`Error fetching order details for ${id}:`, error);
+          return throwError(() => error);
+        })
       );
   }
 

@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { config } from "../lib/config.js";
+import { logActivity } from "./activity.controller.js";
 
 const generateTokens = (userId) => {
         const accessToken = jwt.sign({ userId }, config.ACCESS_TOKEN_SECRET, {
@@ -16,19 +17,33 @@ const generateTokens = (userId) => {
 
 
 const setCookies = (res, accessToken, refreshToken) => {
+    // Set access token cookie
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: false, // Set to true in production with HTTPS
+        sameSite: "lax", // Use 'none' in production with HTTPS
         maxAge: 15 * 60 * 1000, // 15 minutes
         path: '/'
     });
+    
+    // Set refresh token cookie
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: false, // Set to true in production with HTTPS
+        sameSite: "lax", // Use 'none' in production with HTTPS
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/'
+    });
+    
+    console.log('Cookies set:', {
+        accessToken: 'token-set',
+        refreshToken: 'token-set',
+        options: {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            path: '/'
+        }
     });
 };
 
@@ -49,6 +64,21 @@ export const signup = async (req, res) => {
         const { accessToken, refreshToken } = generateTokens(user._id);
 
         setCookies(res, accessToken, refreshToken);
+
+        // Log user registration activity
+        await logActivity(
+            user, // Using the newly created user as the actor
+            `New user registered: ${email}`,
+            "user",
+            "New",
+            user._id,
+            { 
+                userId: user._id,
+                email: user.email,
+                name: user.name,
+                role: user.role
+            }
+        );
 
         res.status(201).json({
             _id: user._id,
@@ -79,6 +109,19 @@ export const login = async (req, res) => {
 
                 setCookies(res, accessToken, refreshToken);
 
+                // Log successful login activity
+                await logActivity(
+                    user,
+                    `User logged in: ${email}`,
+                    "user",
+                    "Completed",
+                    user._id,
+                    { 
+                        userId: user._id,
+                        email: user.email
+                    }
+                );
+
                 res.json({
                     _id: user._id,
                     name: user.name,
@@ -101,6 +144,20 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
+        // Log logout activity if user is authenticated
+        if (req.user) {
+            await logActivity(
+                req.user,
+                `User logged out: ${req.user.email}`,
+                "user",
+                "Completed",
+                req.user._id,
+                { 
+                    userId: req.user._id,
+                    email: req.user.email
+                }
+            );
+        }
 
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
@@ -121,20 +178,19 @@ export const refreshToken = async (req, res) => {
 
         const decoded = jwt.verify(refreshTokenFromCookie, config.REFRESH_TOKEN_SECRET);
 
+        // Generate a new access token
         const accessToken = jwt.sign({ userId: decoded.userId }, config.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
+        
+        // Also generate a new refresh token to extend the session
+        const refreshToken = jwt.sign({ userId: decoded.userId }, config.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: false,
-            sameSite: "lax",
-            maxAge: 15 * 60 * 1000,
-            path: '/'
-        });
+        // Set both cookies with updated expiration times
+        setCookies(res, accessToken, refreshToken);
 
         res.json({ message: "Token refreshed successfully" });
     } catch (error) {
         console.log("Error in refreshToken controller", error.message);
-        res.status(500).json({ message: "Server error", error: error.message });
+        res.status(401).json({ message: "Invalid refresh token", error: error.message });
     }
 };
 

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, catchError, of } from 'rxjs';
+import { Observable, catchError, of, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface DashboardStats {
@@ -11,10 +11,14 @@ export interface DashboardStats {
 }
 
 export interface RecentActivity {
+  _id?: string;
   date: Date;
   activity: string;
   user: string;
   status: 'Completed' | 'Updated' | 'New' | 'Refund' | 'Added' | 'Cancelled';
+  entityType?: string;
+  entityId?: string;
+  details?: any;
 }
 
 @Injectable({
@@ -54,14 +58,54 @@ export class DashboardService {
     };
   }
 
-  getRecentActivities(): Observable<RecentActivity[]> {
-    return this.http.get<RecentActivity[]>(`${this.baseUrl}/recent-activities`, this.getHttpOptions())
-      .pipe(
-        catchError(error => {
-          console.error('Error fetching recent activities:', error);
-          return of(this.getRecentActivitiesFallback());
-        })
-      );
+  getRecentActivities(limit: number = 10, skip: number = 0): Observable<RecentActivity[]> {
+    return this.http.get<RecentActivity[]>(
+      `${this.baseUrl}/recent-activities?limit=${limit}&skip=${skip}`,
+      this.getHttpOptions()
+    ).pipe(
+      map(activities => {
+        // Process activities to ensure all required fields are present
+        return activities.map(activity => ({
+          _id: activity._id || '',
+          date: new Date(activity.date),
+          activity: activity.activity,
+          user: activity.user,
+          status: activity.status,
+          entityType: activity.entityType,
+          entityId: activity.entityId,
+          details: activity.details
+        }));
+      }),
+      catchError(error => {
+        console.error('Error fetching recent activities:', error);
+        return of(this.getRecentActivitiesFallback());
+      })
+    );
+  }
+
+  // Get activity details for a specific entity
+  getEntityActivities(entityType: string, entityId: string, limit: number = 5): Observable<RecentActivity[]> {
+    return this.http.get<RecentActivity[]>(
+      `${this.baseUrl}/entity-activities/${entityType}/${entityId}?limit=${limit}`,
+      this.getHttpOptions()
+    ).pipe(
+      map(activities => {
+        return activities.map(activity => ({
+          _id: activity._id || '',
+          date: new Date(activity.date),
+          activity: activity.activity,
+          user: activity.user,
+          status: activity.status,
+          entityType: entityType,
+          entityId: entityId,
+          details: activity.details
+        }));
+      }),
+      catchError(error => {
+        console.error(`Error fetching ${entityType} activities:`, error);
+        return of([]);
+      })
+    );
   }
 
   // Fallback method for recent activities

@@ -127,7 +127,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr *ngFor="let order of filteredOrders">
+                <tr *ngFor="let order of filteredOrders" class="order-row" (click)="viewOrderDetails(order)">
                   <td>{{ order._id }}</td>
                   <td>{{ order.createdAt | date:'short' }}</td>
                   <td>{{ getUserEmail(order.user) }}</td>
@@ -147,11 +147,13 @@
                     </span>
                   </td>
                   <td class="align-middle">
-                    <div class="dropdown">
+                    <div class="dropdown" (click)="$event.stopPropagation()">
                       <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderActions{{ order._id }}" data-bs-toggle="dropdown" aria-expanded="false">
                         Actions
                       </button>
                       <ul class="dropdown-menu">
+                        <li><button class="dropdown-item" (click)="viewOrderDetails(order)">View Details</button></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'pending')">Mark as Pending</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'processing')">Mark as Processing</button></li>
                         <li><button class="dropdown-item" (click)="updateOrderStatus(order._id, 'shipped')">Mark as Shipped</button></li>
@@ -166,6 +168,163 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Details Modal -->
+  <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="orderDetailsModalLabel">Order Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Loading indicator -->
+          <div *ngIf="!selectedOrder" class="text-center p-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0">Loading order details...</p>
+          </div>
+          
+          <!-- Order details content -->
+          <div *ngIf="selectedOrder">
+            <!-- Order ID and Date -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <p class="mb-1"><strong>Order ID:</strong> {{ selectedOrder._id }}</p>
+                <p class="mb-0"><strong>Date:</strong> {{ selectedOrder.createdAt | date:'medium' }}</p>
+              </div>
+              <div class="col-md-6 text-md-end">
+                <p class="mb-0">
+                  <span class="badge" 
+                        [ngClass]="{
+                          'bg-primary': getOrderStatus(selectedOrder) === 'pending',
+                          'bg-warning': getOrderStatus(selectedOrder) === 'processing',
+                          'bg-info': getOrderStatus(selectedOrder) === 'shipped',
+                          'bg-success': getOrderStatus(selectedOrder) === 'delivered',
+                          'bg-danger': getOrderStatus(selectedOrder) === 'cancelled',
+                          'bg-dark': getOrderStatus(selectedOrder) === 'completed'
+                        }">
+                    {{ getOrderStatus(selectedOrder) | titlecase }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Customer Information -->
+            <div class="row mb-3">
+              <div class="col-12">
+                <h6>Customer Information</h6>
+                <p class="mb-0"><strong>Email:</strong> {{ getUserEmail(selectedOrder.user) }}</p>
+              </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Shipping Address -->
+            <div class="row mb-3">
+              <div class="col-12">
+                <h6>Shipping Address</h6>
+                <p class="mb-0">{{ selectedOrder.shippingAddress.street }}</p>
+                <p class="mb-0">{{ selectedOrder.shippingAddress.city }}, {{ selectedOrder.shippingAddress.state }} {{ selectedOrder.shippingAddress.zipCode }}</p>
+                <p class="mb-0">{{ selectedOrder.shippingAddress.country }}</p>
+              </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Order Items -->
+            <div class="row mb-3">
+              <div class="col-12">
+                <h6>Order Items</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of getOrderItems(selectedOrder)">
+                        <td>{{ getProductName(item.product) }}</td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-end">${{ item.price.toFixed(2) }}</td>
+                        <td class="text-end">${{ (item.price * item.quantity).toFixed(2) }}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                        <td class="text-end">${{ calculateSubtotal(selectedOrder).toFixed(2) }}</td>
+                      </tr>
+                      <tr *ngIf="selectedOrder.discountAmount && selectedOrder.discountAmount > 0">
+                        <td colspan="3" class="text-end"><strong>Discount:</strong></td>
+                        <td class="text-end">-${{ selectedOrder.discountAmount.toFixed(2) }}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                        <td class="text-end"><strong>${{ selectedOrder.totalAmount.toFixed(2) }}</strong></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Payment Information -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <h6>Payment Information</h6>
+                <p class="mb-0"><strong>Method:</strong> {{ selectedOrder.paymentMethod }}</p>
+                <p class="mb-0"><strong>Status:</strong> {{ selectedOrder.paymentStatus || 'Pending' }}</p>
+              </div>
+              <div class="col-md-6">
+                <h6>Shipping Method</h6>
+                <p class="mb-0">{{ selectedOrder.shippingMethod || 'Standard Shipping' }}</p>
+              </div>
+            </div>
+            
+            <!-- Payment Result if available -->
+            <div class="row" *ngIf="selectedOrder.paymentResult">
+              <div class="col-12">
+                <hr>
+                <h6>Payment Details</h6>
+                <p class="mb-0"><strong>Transaction ID:</strong> {{ selectedOrder.paymentResult.id }}</p>
+                <p class="mb-0"><strong>Status:</strong> {{ selectedOrder.paymentResult.status }}</p>
+                <p class="mb-0"><strong>Email:</strong> {{ selectedOrder.paymentResult.emailAddress }}</p>
+                <p class="mb-0"><strong>Update Time:</strong> {{ selectedOrder.paymentResult.updateTime }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="dropdown me-auto" *ngIf="selectedOrder">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="updateStatusDropdown" data-bs-toggle="dropdown" aria-expanded="false" [disabled]="isUpdatingStatus">
+              <span *ngIf="isUpdatingStatus" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+              Update Status
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="updateStatusDropdown">
+              <li><button class="dropdown-item" (click)="updateSelectedOrderStatus('pending')">Mark as Pending</button></li>
+              <li><button class="dropdown-item" (click)="updateSelectedOrderStatus('processing')">Mark as Processing</button></li>
+              <li><button class="dropdown-item" (click)="updateSelectedOrderStatus('shipped')">Mark as Shipped</button></li>
+              <li><button class="dropdown-item" (click)="updateSelectedOrderStatus('delivered')">Mark as Delivered</button></li>
+              <li><button class="dropdown-item" (click)="updateSelectedOrderStatus('completed')">Mark as Completed</button></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item text-danger" (click)="updateSelectedOrderStatus('cancelled')">Cancel Order</button></li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

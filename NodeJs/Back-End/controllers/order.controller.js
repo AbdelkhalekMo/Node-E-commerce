@@ -1,5 +1,6 @@
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
+import { logActivity } from "./activity.controller.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -37,6 +38,21 @@ export const createOrder = async (req, res) => {
     });
     
     console.log("Order created successfully:", order._id);
+    
+    // Log order creation activity
+    await logActivity(
+      req.user,
+      `New order placed: #${order._id}`,
+      "order",
+      "Completed",
+      order._id,
+      { 
+        orderId: order._id,
+        amount: totalAmount,
+        itemCount: products.length,
+        status: "processing"
+      }
+    );
     
     // Clear user's cart after successful order
     req.user.cartItems = [];
@@ -109,18 +125,54 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
     
-    const order = await Order.findByIdAndUpdate(
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    // Store old status for activity logging
+    const oldStatus = order.status;
+    
+    // Update the order
+    const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true }
     ).populate("user", "name email")
       .populate("products.product");
     
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    // Determine the activity status based on the new order status
+    let activityStatus;
+    switch (status) {
+      case "shipped":
+        activityStatus = "Updated";
+        break;
+      case "delivered":
+        activityStatus = "Completed";
+        break;
+      case "cancelled":
+        activityStatus = "Cancelled";
+        break;
+      default:
+        activityStatus = "Updated";
     }
     
-    res.json(order);
+    // Log the status change activity
+    await logActivity(
+      req.user,
+      `Order status updated: #${order._id} (${oldStatus} → ${status})`,
+      "order",
+      activityStatus,
+      order._id,
+      { 
+        orderId: order._id,
+        oldStatus,
+        newStatus: status,
+        amount: order.totalAmount
+      }
+    );
+    
+    res.json(updatedOrder);
   } catch (error) {
     console.log("Error in updateOrderStatus controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -129,11 +181,32 @@ export const updateOrderStatus = async (req, res) => {
 
 export const deleteOrder = async (req, res) => {
   try {
-    const order = await Order.findByIdAndDelete(req.params.id);
+    const order = await Order.findById(req.params.id);
     
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
+    
+    // Store order details for activity logging
+    const orderDetails = {
+      orderId: order._id,
+      user: order.user,
+      status: order.status,
+      amount: order.totalAmount,
+      productCount: order.products.length
+    };
+    
+    await Order.findByIdAndDelete(req.params.id);
+    
+    // Log order deletion activity
+    await logActivity(
+      req.user,
+      `Order deleted: #${order._id}`,
+      "order",
+      "Cancelled",
+      null, // No entity ID since it's deleted
+      orderDetails
+    );
     
     res.json({ message: "Order deleted successfully" });
   } catch (error) {
@@ -163,9 +236,26 @@ export const cancelUserOrder = async (req, res) => {
       });
     }
     
+    // Store old status for activity logging
+    const oldStatus = order.status;
+    
     // Update the order status to cancelled
     order.status = "cancelled";
     await order.save();
+    
+    // Log order cancellation activity
+    await logActivity(
+      req.user,
+      `Order cancelled by customer: #${order._id}`,
+      "order",
+      "Cancelled",
+      order._id,
+      { 
+        orderId: order._id,
+        oldStatus,
+        amount: order.totalAmount
+      }
+    );
     
     // Return the updated order
     const updatedOrder = await Order.findById(req.params.id)

@@ -1,6 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import Product from "../models/product.model.js";
 import mongoose from "mongoose";
+import { logActivity } from "./activity.controller.js";
 
 // Cache configuration
 const CACHE_TTL = 5 * 60; // 5 minutes in seconds
@@ -173,6 +174,16 @@ export const createProduct = async (req, res) => {
       cache.delete('featured-products');
     }
 
+    // Log activity
+    await logActivity(
+      req.user,
+      `Product added: ${product.name}`,
+      "product",
+      "Added",
+      product._id,
+      { productId: product._id, productName: product.name, price: product.price }
+    );
+
     res.status(201).json(product);
   } catch (error) {
     console.error("Error in createProduct controller:", error);
@@ -198,37 +209,54 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Delete image from cloudinary if exists and credentials are available
-    if (product.image && 
-        product.image.includes('cloudinary') &&
-        process.env.CLOUDINARY_CLOUD_NAME && 
-        process.env.CLOUDINARY_API_KEY && 
-        process.env.CLOUDINARY_API_SECRET) {
-      const publicId = product.image.split("/").pop().split(".")[0];
+    // Store product details before deletion for activity logging
+    const productDetails = {
+      productId: product._id,
+      productName: product.name,
+      price: product.price,
+      category: product.category
+    };
+
+    // Attempt to delete the product image from Cloudinary if it exists
+    if (product.image && product.image.includes('cloudinary')) {
       try {
+        const publicId = product.image.split('/').pop().split('.')[0];
         await cloudinary.uploader.destroy(`products/${publicId}`);
+        console.log(`Image deleted from Cloudinary: products/${publicId}`);
       } catch (cloudinaryError) {
-        console.error("Error deleting image from cloudinary:", cloudinaryError);
-        // Continue with product deletion even if image deletion fails
+        console.error("Error deleting image from Cloudinary:", cloudinaryError);
+        // Continue with deletion even if image deletion fails
       }
     }
 
     await Product.findByIdAndDelete(id).session(session);
-    await session.commitTransaction();
+    
+    // Clear caches
+    cache.clear();
 
-    // Clear relevant caches
-    cache.clear(); // Clear all cache since product listings will change
+    await session.commitTransaction();
+    session.endSession();
+
+    // Log activity after successful deletion
+    await logActivity(
+      req.user,
+      `Product deleted: ${productDetails.productName}`,
+      "product",
+      "Cancelled",
+      null, // No entity ID since it's deleted
+      productDetails
+    );
 
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     await session.abortTransaction();
+    session.endSession();
+    
     console.error("Error in deleteProduct controller:", error);
     res.status(500).json({ 
       message: "Failed to delete product",
       error: process.env.NODE_ENV === 'production' ? undefined : error.message 
     });
-  } finally {
-    session.endSession();
   }
 };
 
@@ -370,84 +398,90 @@ export const getProductById = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const productData = req.body;
+    const updates = req.body;
     
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid product ID" });
     }
     
-    // Validate product data
-    const validationErrors = validateProduct(productData);
-    if (validationErrors.length > 0) {
-      return res.status(400).json({ errors: validationErrors });
-    }
-    
-    const product = await Product.findById(id);
-    if (!product) {
+    // Find the existing product
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
     
-    // Handle image upload if a new image is provided
-    let imageUrl = product.image;
+    // Store old values for activity logging
+    const oldValues = {
+      name: existingProduct.name,
+      price: existingProduct.price,
+      category: existingProduct.category,
+      isFeatured: existingProduct.isFeatured
+    };
     
-    // Check if a new imageUrl is provided
-    if (productData.imageUrl && productData.imageUrl !== product.image) {
-      imageUrl = productData.imageUrl;
-    }
-    
-    // Only attempt to upload to Cloudinary if credentials are available
-    if (productData.image && 
-        productData.image !== product.image && 
-        process.env.CLOUDINARY_CLOUD_NAME && 
-        process.env.CLOUDINARY_API_KEY && 
-        process.env.CLOUDINARY_API_SECRET) {
+    // Handle image upload if new image is provided
+    if (updates.image && updates.image.startsWith('data:image')) {
       try {
-        // Delete old image if exists
-        if (product.image && product.image.includes('cloudinary')) {
-          const publicId = product.image.split("/").pop().split(".")[0];
-          try {
-            await cloudinary.uploader.destroy(`products/${publicId}`);
-          } catch (cloudinaryError) {
-            console.error("Error deleting old image from cloudinary:", cloudinaryError);
-          }
-        }
-        
-        // Upload new image
-        const cloudinaryResponse = await cloudinary.uploader.upload(productData.image, {
+        const cloudinaryResponse = await cloudinary.uploader.upload(updates.image, {
           folder: "products",
           quality: "auto:good",
           fetch_format: "auto"
         });
-        imageUrl = cloudinaryResponse.secure_url;
+        updates.image = cloudinaryResponse.secure_url;
+        
+        // Delete old image if it exists and is from Cloudinary
+        if (existingProduct.image && existingProduct.image.includes('cloudinary')) {
+          try {
+            const publicId = existingProduct.image.split('/').pop().split('.')[0];
+            await cloudinary.uploader.destroy(`products/${publicId}`);
+          } catch (cloudinaryError) {
+            console.error("Error deleting old image from Cloudinary:", cloudinaryError);
+          }
+        }
       } catch (uploadError) {
-        console.error("Image upload failed:", uploadError);
-        console.log("Falling back to provided imageUrl or existing image");
-        // If Cloudinary upload fails, we'll use the imageUrl or keep the existing image
+        console.error("Failed to upload new image:", uploadError);
+        delete updates.image;
       }
-    } else if (productData.image && productData.image !== product.image) {
-      console.log("Cloudinary credentials not available, using provided imageUrl or existing image");
+    } else if (!updates.image || updates.image === "") {
+      // Keep the existing image if no new image is provided
+      updates.image = existingProduct.image;
     }
     
-    // Update product with new data
+    // Update the product
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
-      {
-        ...productData,
-        image: imageUrl,
-        updatedAt: new Date()
-      },
-      { new: true }
+      { $set: updates },
+      { new: true, runValidators: true }
     );
     
-    // Clear relevant caches
-    cache.clear(); // Clear all cache since product listings will change
+    // Clear caches
+    cache.clear();
+    
+    // Log activity with changed fields
+    const changedFields = {};
+    Object.keys(oldValues).forEach(key => {
+      if (updates[key] !== undefined && updates[key] !== oldValues[key]) {
+        changedFields[key] = {
+          from: oldValues[key],
+          to: updates[key]
+        };
+      }
+    });
+    
+    await logActivity(
+      req.user,
+      `Product updated: ${updatedProduct.name}`,
+      "product",
+      "Updated",
+      updatedProduct._id,
+      { productId: updatedProduct._id, changes: changedFields }
+    );
     
     res.json(updatedProduct);
   } catch (error) {
     console.error("Error in updateProduct controller:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Failed to update product",
-      error: process.env.NODE_ENV === 'production' ? undefined : error.message 
+      error: process.env.NODE_ENV === 'production' ? undefined : error.message
     });
   }
 };

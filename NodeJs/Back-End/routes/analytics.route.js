@@ -1,6 +1,7 @@
 import express from "express";
 import { adminRoute, protectRoute } from "../middleware/auth.middleware.js";
 import { getAnalyticsData, getDailySalesData } from "../controllers/analytics.controller.js";
+import { getRecentActivities } from "../controllers/activity.controller.js";
 
 const router = express.Router();
 
@@ -43,40 +44,49 @@ router.get("/dashboard-stats", protectRoute, adminRoute, async (req, res) => {
 // Recent activities for admin dashboard
 router.get("/recent-activities", protectRoute, adminRoute, async (req, res) => {
 	try {
-		const now = new Date();
-		// Mock data for now - in a real app, this would come from a database
-		const activities = [
-			{
-				date: new Date(now.getTime() - 30 * 60 * 1000), // 30 minutes ago
-				activity: 'New order placed',
-				user: 'customer123@example.com',
-				status: 'Completed'
-			},
-			{
-				date: new Date(now.getTime() - 120 * 60 * 1000), // 2 hours ago
-				activity: 'Product stock updated',
-				user: 'admin@example.com',
-				status: 'Updated'
-			},
-			{
-				date: new Date(now.getTime() - 240 * 60 * 1000), // 4 hours ago
-				activity: 'New user registered',
-				user: 'newuser@example.com',
-				status: 'New'
-			},
-			{
-				date: new Date(now.getTime() - 300 * 60 * 1000), // 5 hours ago
-				activity: 'Order refunded',
-				user: 'customer456@example.com',
-				status: 'Refund'
-			},
-			{
-				date: new Date(now.getTime() - 360 * 60 * 1000), // 6 hours ago
-				activity: 'Product added',
-				user: 'admin@example.com',
-				status: 'Added'
-			}
-		];
+		// Get pagination parameters from query string with defaults
+		const limit = parseInt(req.query.limit) || 10;
+		const skip = parseInt(req.query.skip) || 0;
+		
+		// Get activities from the database using our controller
+		const activities = await getRecentActivities(limit, skip);
+		
+		// If no activities found yet, return sample data
+		if (activities.length === 0) {
+			const now = new Date();
+			return res.json([
+				{
+					date: new Date(now.getTime() - 30 * 60 * 1000),
+					activity: 'New order placed',
+					user: 'customer123@example.com',
+					status: 'Completed'
+				},
+				{
+					date: new Date(now.getTime() - 120 * 60 * 1000),
+					activity: 'Product stock updated',
+					user: 'admin@example.com',
+					status: 'Updated'
+				},
+				{
+					date: new Date(now.getTime() - 240 * 60 * 1000),
+					activity: 'New user registered',
+					user: 'newuser@example.com',
+					status: 'New'
+				},
+				{
+					date: new Date(now.getTime() - 300 * 60 * 1000),
+					activity: 'Order refunded',
+					user: 'customer456@example.com',
+					status: 'Refund'
+				},
+				{
+					date: new Date(now.getTime() - 360 * 60 * 1000),
+					activity: 'Product added',
+					user: 'admin@example.com',
+					status: 'Added'
+				}
+			]);
+		}
 		
 		res.json(activities);
 	} catch (error) {

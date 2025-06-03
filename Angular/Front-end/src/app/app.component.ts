@@ -5,6 +5,7 @@ import { FooterComponent } from './components/shared/footer/footer.component';
 import { LoadingSpinnerComponent } from './components/shared/loading-spinner/loading-spinner.component';
 import { PageTransitionService } from './services/page-transition.service';
 import { CommonModule } from '@angular/common';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -23,11 +24,29 @@ import { CommonModule } from '@angular/common';
 export class AppComponent implements OnInit {
   title = 'E-Shop';
   
-  constructor(public pageTransitionService: PageTransitionService) {}
+  constructor(
+    public pageTransitionService: PageTransitionService,
+    private authService: AuthService
+  ) {
+    console.log('App component initialized');
+  }
   
   ngOnInit() {
+    console.log('App component initializing');
     // Ensure CSS variables are properly loaded
     this.initializeColorVariables();
+    
+    // Ensure auth state is checked
+    this.checkAuthState();
+  }
+  
+  private checkAuthState() {
+    // This will trigger the auth service to check the authentication state
+    // The service constructor already does this, but we call it again to be sure
+    console.log('App component checking auth state');
+    this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+      console.log('Auth state in app component:', isAuthenticated ? 'authenticated' : 'not authenticated');
+    });
   }
   
   private initializeColorVariables() {

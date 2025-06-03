@@ -17,3 +17,57 @@
   max-height: 400px;
   overflow-y: auto;
 }
+
+.card {
+  transition: transform 0.2s;
+  
+  &:hover {
+    transform: translateY(-3px);
+  }
+}
+
+.bg-primary, .bg-success, .bg-info, .bg-warning {
+  transition: all 0.3s;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+/* Activity table styles */
+.clickable {
+  cursor: pointer;
+  position: relative;
+  
+  &:hover {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+  }
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: #007bff;
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover:after {
+    transform: scaleX(1);
+  }
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .display-4 {
+    font-size: 2.5rem;
+  }
+}

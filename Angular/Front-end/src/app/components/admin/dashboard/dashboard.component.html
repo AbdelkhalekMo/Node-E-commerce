@@ -85,23 +85,30 @@
     <!-- Recent activities section -->
     <div class="col-12 mb-4">
       <div class="card shadow-sm">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Recent Activities</h5>
+          <button class="btn btn-sm btn-outline-primary" (click)="refreshActivities()" [disabled]="isLoadingActivities">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+          </button>
         </div>
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-striped table-hover">
               <thead>
                 <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Activity</th>
-                  <th scope="col">User</th>
-                  <th scope="col">Status</th>
+                  <th scope="col" style="width: 20%">Date</th>
+                  <th scope="col" style="width: 40%">Activity</th>
+                  <th scope="col" style="width: 25%">User</th>
+                  <th scope="col" style="width: 15%">Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let activity of recentActivities">
-                  <td>{{ activity.date | date:'short' }}</td>
+                <tr *ngFor="let activity of recentActivities" [class.clickable]="navigateToEntity(activity)" 
+                    [routerLink]="navigateToEntity(activity)">
+                  <td>
+                    <span class="d-none d-md-inline">{{ activity.date | date:'short' }}</span>
+                    <span class="d-md-none">{{ formatActivityDate(activity.date) }}</span>
+                  </td>
                   <td>{{ activity.activity }}</td>
                   <td>{{ activity.user }}</td>
                   <td>
@@ -117,11 +124,31 @@
                     </span>
                   </td>
                 </tr>
-                <tr *ngIf="recentActivities.length === 0">
-                  <td colspan="4" class="text-center">No recent activities found</td>
+                <tr *ngIf="isLoadingActivities">
+                  <td colspan="4" class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span class="ms-2">Loading activities...</span>
+                  </td>
+                </tr>
+                <tr *ngIf="recentActivities.length === 0 && !isLoadingActivities">
+                  <td colspan="4" class="text-center py-3">No recent activities found</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+          
+          <!-- Load more button -->
+          <div class="text-center mt-3" *ngIf="hasMoreActivities && !isLoadingActivities">
+            <button class="btn btn-outline-primary" (click)="loadMoreActivities()">
+              Load More Activities
+            </button>
+          </div>
+          
+          <!-- No more activities message -->
+          <div class="text-center mt-3 text-muted" *ngIf="!hasMoreActivities && recentActivities.length > 0">
+            <small>No more activities to load</small>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import { logActivity } from "./activity.controller.js";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -36,17 +37,36 @@ export const updateUserRole = async (req, res) => {
       return res.status(400).json({ message: "Invalid role specified" });
     }
     
-    const user = await User.findByIdAndUpdate(
+    const userToUpdate = await User.findById(req.params.id).select("-password");
+    if (!userToUpdate) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Store old role for activity logging
+    const oldRole = userToUpdate.role;
+    
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { role },
       { new: true }
     ).select("-password");
     
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    // Log the role change activity
+    await logActivity(
+      req.user,
+      `User role updated: ${updatedUser.email} (${oldRole} → ${role})`,
+      "user",
+      "Updated",
+      updatedUser._id,
+      { 
+        userId: updatedUser._id,
+        email: updatedUser.email,
+        oldRole,
+        newRole: role
+      }
+    );
     
-    res.json(user);
+    res.json(updatedUser);
   } catch (error) {
     console.log("Error in updateUserRole controller", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -55,11 +75,32 @@ export const updateUserRole = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    
+    // Store user details for activity logging
+    const userDetails = {
+      userId: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt
+    };
+    
+    await User.findByIdAndDelete(req.params.id);
+    
+    // Log user deletion activity
+    await logActivity(
+      req.user,
+      `User deleted: ${user.email}`,
+      "user",
+      "Cancelled",
+      null, // No entity ID since it's deleted
+      userDetails
+    );
     
     res.json({ message: "User deleted successfully" });
   } catch (error) {
